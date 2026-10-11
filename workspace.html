@@ -199,7 +199,7 @@ fieldset.field{border:0;padding:0;margin:0}
     <a class="brand" href="#orders" aria-label="LoanMatcha lender workspace, home">
       <span class="wm"><span class="wl">loan</span> <span class="wmm">matcha</span></span><span class="prod">Partners</span>
     </a>
-    <div class="lender"><i aria-hidden="true">AB</i><span>ABC Bank<small>Growth Partner</small></span></div>
+    <a class="btn" id="switchView" href="/workspace?view=admin">Switch to Admin</a><div class="lender"><i aria-hidden="true">AB</i><span>ABC Bank<small>Growth Partner</small></span></div>
   </div>
   <nav class="wrap tabs" aria-label="Main">
     <a href="#orders" data-nav="orders">Fund allocations</a>
@@ -207,8 +207,8 @@ fieldset.field{border:0;padding:0;margin:0}
     <a href="#portfolio" data-nav="portfolio">Portfolio</a>
   </nav>
 </header>
-<p class="wrap proto"><b>Prototype.</b> Synthetic borrowers and a sample lender. Borrowers appear by loan account number only. Credit checks, approvals and fund releases are simulated, and no real money moves.</p>
-<main id="app" class="wrap"></main>
+<p class="wrap proto"><b>Prototype.</b> Synthetic borrowers and a sample lender. Borrowers appear by loan account number only. Credit checks, approvals and fund releases are simulated, and no real money moves. Demo changes are saved in this browser and shared between Admin and Lender views.</p>
+<p id="demoStorageWarning" class="wrap" role="alert" hidden>Browser storage is unavailable. Demo changes cannot be shared or saved.</p><main id="app" class="wrap"></main>
 <div id="sheet" hidden></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -240,7 +240,9 @@ const INTERVIEW_NOTE=['Income is seasonal; borrower prefers due dates after peak
 const DECLINE=['Outside our internal exposure limit for this employer','Payment-to-income ratio above our policy','Employer not on our accredited list','Incomplete employment verification'];
 
 /* ---------- state ---------- */
-const state={orders:[],borrowers:[]};
+const ADMIN=new URLSearchParams(location.search).get('view')==='admin';
+const STORE='loanmatcha-allocation-demo-v3';
+const state={orders:[],borrowers:[],candidates:[],audit:[]};
 let seq=1000;
 const acct=n=>'LA-26-'+String(n).padStart(5,'0');
 const fmtP2=n=>'₱'+Number(n).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -263,6 +265,31 @@ function makeBorrower(o,status){
 function addOrder(o,mix){state.orders.push(o);for(const[s,n]of Object.entries(mix||{}))for(let i=0;i<n;i++)state.borrowers.push(makeBorrower(o,s))}
 addOrder({id:'FA-2026-014',title:'Retail and MSME employees, South Luzon',capital:20e6,count:200,ticket:100000,industries:['Retail','MSME'],locations:['NCR','Laguna','Cavite'],minScore:650,timeline:3,rate:18,term:12,docs:[...DOCS],postedAt:days(-41)},{released:62,approved:24,declined:9,pending:46});
 addOrder({id:'FA-2026-019',title:'BPO salary loans, Metro Manila',capital:5e6,count:100,ticket:50000,industries:['BPO'],locations:['NCR','Rizal'],minScore:620,timeline:2,rate:21,term:6,docs:[...DOCS],postedAt:days(-9)},{approved:4,declined:1,pending:17});
+
+
+function revive(v){return JSON.parse(v,(k,x)=>['postedAt','matchedAt','releasedAt'].includes(k)&&x?new Date(x):x)}
+function loadDemo(){try{const saved=revive(localStorage.getItem(STORE));if(saved&&Array.isArray(saved.orders)&&Array.isArray(saved.borrowers)){Object.assign(state,saved);seq=Math.max(1000,...state.borrowers.map(b=>Number(b.id.split('-').pop())),...state.candidates.map(b=>Number(b.id.split('-').pop())));return true}}catch{}return false}
+state.orders.forEach(o=>Object.assign(o,{lender:'ABC Bank',reviewStatus:'approved',fundingVerified:true,fundingRef:'DEMO-'+o.id}));
+loadDemo();
+function saveDemo(){try{localStorage.setItem(STORE,JSON.stringify(state))}catch{document.getElementById('demoStorageWarning').hidden=false}}
+function record(o,m){state.audit.unshift({at:new Date().toLocaleString('en-PH'),actor:ADMIN?'IVPH Admin':'ABC Bank',orderId:o.id,message:m})}
+function allocationStatus(o){return o.reviewStatus==='approved'?(o.fundingVerified?'Matching open':'Awaiting funding verification'):o.reviewStatus==='changes'?'Changes requested':o.reviewStatus==='declined'?'Declined':'Awaiting admin review'}
+function eligible(o){return o&&o.reviewStatus==='approved'&&o.fundingVerified}
+function remainingSlots(o){return Math.max(0,o.count-stats(o).matched-state.candidates.filter(b=>b.orderId===o.id).length)}
+function adminList(){const list=state.orders.slice().reverse();return `<div class="head"><div><h1>Fund allocations · Admin</h1><p class="sub">Review new allocations, verify funding and send qualified borrower packages to the lender.</p></div><a class="btn" href="/admin">Lender onboarding</a></div><div class="kpis">${kpi('Needs review',list.filter(o=>!['approved','declined'].includes(o.reviewStatus)).length)}${kpi('Awaiting funding',list.filter(o=>o.reviewStatus==='approved'&&!o.fundingVerified).length)}${kpi('Ready for matching',list.filter(eligible).length)}</div>${list.map(o=>`<a class="order" href="#order/${o.id}"><div class="order-top"><div><h2>${esc(o.title)}</h2><p class="meta">${o.id} · ${esc(o.lender||'ABC Bank')} · ${fmtD(o.postedAt)}</p></div><span class="pill">${allocationStatus(o)}</span></div><div class="chips">${chips(o)}</div><div class="order-foot"><span>${fmtP(o.capital)} committed</span><span>${stats(o).pending} with lender</span><span>${stats(o).released} released</span></div></a>`).join('')}`}
+function adminDetail(id){const o=byOrder(id);if(!o)return '<a class="back" href="#orders">Back</a><div class="empty">Allocation not found</div>';const st=stats(o),cs=state.candidates.filter(b=>b.orderId===id),reserved=st.approved*o.ticket,released=st.releasedAmt,avail=o.fundingVerified?o.capital-released-reserved:0;
+return `<a class="back" href="#orders">Back to fund allocations</a><div class="head"><div><p class="meta">${o.id} · ${esc(o.lender||'ABC Bank')}</p><h1>${esc(o.title)}</h1><p class="sub">${allocationStatus(o)}</p></div><a class="btn" href="/workspace#order/${o.id}">View as lender</a></div><div class="kpis">${kpi('Committed',fmtP(o.capital))}${kpi('Verified available',fmtP(avail),o.fundingVerified?'After reservations and releases':'Funding not yet verified')}${kpi('Reserved',fmtP(reserved),st.approved+' approved borrowers')}${kpi('Released',fmtP(released),st.released+' borrowers')}</div>
+<div class="grid2"><div><div class="panel"><h3>1. Review allocation</h3>${o.lenderResponse?`<div class="note">Lender response: ${esc(o.lenderResponse)}</div>`:''}<p>${o.count} borrowers at ${fmtP(o.ticket)} each · ${o.rate}% p.a. · ${o.term} months</p><div class="chips">${chips(o)}</div><p class="meta">Required documents: ${esc(o.docs.join(', '))}</p>${o.reviewNote?`<div class="note">${esc(o.reviewNote)}</div>`:''}${!['approved','declined'].includes(o.reviewStatus)?`<label for="adminNote">Review note (required for changes or decline)</label><textarea id="adminNote" class="in" rows="3"></textarea><div class="btns"><button class="btn primary" data-act="adminApprove" data-id="${id}">Approve allocation</button><button class="btn" data-act="adminChanges" data-id="${id}">Request changes</button><button class="btn danger" data-act="adminDecline" data-id="${id}">Decline allocation</button></div>`:'<p class="meta">Review completed.</p>'}</div>
+<div class="panel"><h3>2. Verify funding</h3><p class="meta">Simulated bank-reference verification only. No real transfer takes place.</p>${o.fundingVerified?`<div class="note">Funding verified · ${esc(o.fundingRef)}</div>`:`<label for="fundRef">Sample funding reference</label><input id="fundRef" class="in" placeholder="DEMO-TRANSFER-001"><button class="btn primary" data-act="adminFund" data-id="${id}" ${o.reviewStatus==='approved'?'':'disabled'}>Verify ${fmtP(o.capital)} funding</button><p class="meta">Allocation approval is required first.</p>`}</div>
+<div class="panel"><h3>3. Match and submit borrowers</h3><p class="meta">${remainingSlots(o)} slots available. Candidates stay with Admin until submitted to the lender.</p><button class="btn" data-act="adminMatch" data-id="${id}" ${eligible(o)&&remainingSlots(o)>0?'':'disabled'}>Match up to 10 sample borrowers</button>${cs.length?`<div class="btns"><button class="btn primary" data-act="adminSubmit" data-id="${id}">Submit ${cs.length} candidates to lender</button></div>${cs.map(b=>`<div class="note"><b>${b.id}</b> · ${esc(b.industry)} · ${esc(b.province)} · score ${b.score}<p class="meta">${esc(b.interview)}</p>${b.flags.map(f=>`<p class="meta">${esc(f)}</p>`).join('')}<button class="btn" data-act="adminRemove" data-id="${b.id}">Remove candidate</button></div>`).join('')}`:'<p class="meta">No candidates waiting for submission.</p>'}</div></div>
+<div><div class="panel"><h3>4. Lender decisions and releases</h3><dl class="terms"><dt>With lender</dt><dd>${st.pending}</dd><dt>Approved</dt><dd>${st.approved}</dd><dt>Declined</dt><dd>${st.declined}</dd><dt>Released</dt><dd>${st.released}</dd></dl><p class="meta">The lender approves or declines packages and simulates releases in Lender View.</p><a class="btn" href="/workspace#order/${id}">Switch to lender review</a></div><div class="panel"><h3>5. Allocation portfolio</h3><p>${fmtP(released)} released · ${fmtP(o.capital-released)} not yet released</p><a class="btn" href="#portfolio">Monitor portfolio</a></div><div class="panel"><h3>Allocation activity</h3>${state.audit.filter(a=>a.orderId===id).map(a=>`<div class="note"><b>${esc(a.actor)}</b> · ${esc(a.at)}<p>${esc(a.message)}</p></div>`).join('')||'<p class="meta">Sample allocation loaded. New actions will appear here.</p>'}</div></div></div>`}
+function adminAction(a,id){const o=byOrder(id);if(a==='adminRemove'){const b=state.candidates.find(b=>b.id===id);if(!b)return;const order=byOrder(b.orderId);state.candidates=state.candidates.filter(b=>b.id!==id);record(order,'Removed candidate '+id);return render()}
+if(!o)return;
+if(['adminApprove','adminChanges','adminDecline'].includes(a)){if(['approved','declined'].includes(o.reviewStatus))return;const note=document.getElementById('adminNote').value.trim();if(a!=='adminApprove'&&!note)return toast('Add a review note first.');o.reviewStatus=a==='adminApprove'?'approved':a==='adminChanges'?'changes':'declined';o.reviewNote=note;record(o,'Allocation '+o.reviewStatus+(note?': '+note:''))}
+if(a==='adminFund'){if(o.reviewStatus!=='approved'||o.fundingVerified)return;const ref=document.getElementById('fundRef').value.trim();if(!ref)return toast('Enter a sample funding reference.');o.fundingVerified=true;o.fundingRef=ref;record(o,'Funding verified: '+ref)}
+if(a==='adminMatch'){if(!eligible(o))return;const n=Math.min(10,remainingSlots(o));for(let i=0;i<n;i++){const b=makeBorrower(o,'pending');b.matchedAt=new Date();b.docsIn=[...o.docs];state.candidates.push(b)}record(o,'Matched '+n+' sample candidates for admin review')}
+if(a==='adminSubmit'){if(!eligible(o))return;const cs=state.candidates.filter(b=>b.orderId===id);state.borrowers.push(...cs);state.candidates=state.candidates.filter(b=>b.orderId!==id);record(o,'Submitted '+cs.length+' borrower packages to lender');toast('Packages sent to lender review queue')}
+render()}
 
 const byOrder=id=>state.orders.find(o=>o.id===id);
 function stats(o){const bs=state.borrowers.filter(b=>b.orderId===o.id);const c={pending:0,approved:0,released:0,declined:0,bs};bs.forEach(b=>c[b.status]++);c.matched=c.pending+c.approved+c.released;c.releasedAmt=c.released*o.ticket;return c}
@@ -291,7 +318,7 @@ function vOrders(){
   <ol class="journey" aria-label="Your lender journey">${[['Onboard','Done'],['Verify capital','Done'],['Explore and select','Now'],['Deploy capital','Now'],['Monitor and earn','Ongoing']].map(([t,st],i)=>`<li class="${st==='Done'?'done':'now'}"><span>${String(i+1).padStart(2,'0')}</span><b>${t}</b><small>${st}</small></li>`).join('')}</ol>
   <div class="kpis">${kpi('Capital committed',fmtM(cap),state.orders.length+' active allocations')}${kpi('Released to borrowers',fmtM(rel),Math.round(rel/cap*100)+'% of committed')}${kpi('Waiting for your review',pend,'borrowers matched by LoanMatcha')}</div>
   ${state.orders.slice().reverse().map(o=>{const s=stats(o),l=daysLeft(o);return`<a class="order" href="#order/${o.id}">
-    <div class="order-top"><div><h2>${esc(o.title)}</h2><p class="meta">${o.id}, allocated ${fmtD(o.postedAt)}</p></div><span class="pill ${l<=0?'late':''}">${l>0?l+' days left':'Timeline ended'}</span></div>
+    <div class="order-top"><div><h2>${esc(o.title)}</h2><p class="meta">${o.id}, allocated ${fmtD(o.postedAt)}</p></div><span class="pill">${allocationStatus(o)}</span></div>
     ${dots(o,s)}
     <div class="order-foot"><span><b>${s.matched}</b> of ${o.count} borrowers matched</span><span><b>${fmtM(s.releasedAmt)}</b> of ${fmtM(o.capital)} released</span>${s.pending?`<span class="warn"><b>${s.pending}</b> to review</span>`:''}</div>
     <div class="chips">${chips(o)}</div></a>`}).join('')}`;
@@ -305,8 +332,8 @@ function vOrder(id){
   const empties={pending:'<b>Nothing to review</b>LoanMatcha will add borrowers here as they are qualified.',approved:'<b>No approved borrowers waiting</b>Borrowers you approve appear here until you release funds.',released:'<b>No releases yet</b>Released loans appear here with their repayment status.',declined:'<b>No declined borrowers</b>'};
   return`<a class="back" href="#orders">Back to fund allocations</a>
   <div class="head"><div><h1>${esc(o.title)}</h1><p class="sub">${o.id}. Allocated ${fmtD(o.postedAt)}, ${l>0?l+' days left in the fill timeline':'fill timeline ended'}.</p></div>
-  <div class="btns">${s.approved?`<button class="btn primary" data-act="releaseAll" data-id="${o.id}">Release ${s.approved} approved (${fmtM(s.approved*o.ticket)})</button>`:''}<button class="btn" data-act="batch" data-id="${o.id}" ${room<=0?'disabled':''}>Simulate new matches</button></div></div>
-  <div class="pipe">
+  <div class="btns">${s.approved?`<button class="btn primary" data-act="releaseAll" data-id="${o.id}">Release ${s.approved} approved (${fmtM(s.approved*o.ticket)})</button>`:''}<a class="btn" href="/workspace?view=admin#order/${o.id}">View Admin progress</a></div></div>
+  <div class="panel"><h3>${allocationStatus(o)}</h3><p class="meta">${o.fundingVerified?'Sample funding verified. Admin can submit borrower packages.':'Admin must review the allocation and verify funding before matching.'}</p>${o.reviewNote?`<div class="note">Admin note: ${esc(o.reviewNote)}</div>`:''}${o.lenderResponse?`<p class="meta">Your response: ${esc(o.lenderResponse)}</p>`:''}${o.reviewStatus==='changes'?`<label for="lenderResponse">Response to requested changes</label><textarea class="in" id="lenderResponse" rows="3"></textarea><button class="btn primary" data-act="resubmit" data-id="${o.id}">Resubmit allocation</button>`:''}</div><div class="pipe">
     <div class="stage"><div class="n">1</div><b>${fmtM(o.capital)}</b><span>Funds allocated</span><span class="who">You</span></div>
     <div class="stage"><div class="n">2</div><b>${s.matched}/${o.count}</b><span>Matched and qualified</span><span class="who">LoanMatcha</span></div>
     <div class="stage"><div class="n">3</div><b>${s.approved+s.released}</b><span>Approved, ${s.pending} to review</span><span class="who">You</span></div>
@@ -357,7 +384,7 @@ function vPortfolio(){
 function vNew(){
   const opt=(name,v,on)=>`<label class="opt"><input type="checkbox" name="${name}" value="${esc(v)}" ${on?'checked':''}><span>${esc(v)}</span></label>`;
   return`<a class="back" href="#orders">Back to fund allocations</a>
-  <div class="head"><div><h1>New fund allocation</h1><p class="sub">Set how much capital to allocate and who you want to lend to. LoanMatcha starts matching qualified borrowers right away.</p></div></div>
+  <div class="head"><div><h1>New fund allocation</h1><p class="sub">Set how much capital to allocate and who you want to lend to. IVPH Admin reviews your allocation and verifies sample funding before matching borrowers.</p></div></div>
   <form class="panel form" id="newOrder" novalidate>
     <div class="field"><label for="f-title">Allocation name</label><input class="in" id="f-title" name="title" placeholder="Example: Retail employees, Cavite" required></div>
     <div class="two">
@@ -388,9 +415,9 @@ function openPkg(id){
   const b=state.borrowers.find(x=>x.id===id),o=byOrder(b.orderId),M=amort(o.ticket,o.rate,o.term),pti=M/b.income*100;
   const fit=[[o.industries.includes(b.industry),'Industry: '+b.industry],[o.locations.includes(b.province),'Location: '+b.province],[b.score>=o.minScore,'Credit score '+b.score+' (your minimum is '+o.minScore+')'],[true,'All '+o.docs.length+' required documents submitted']];
   let act='';
-  if(b.status==='pending')act=`<div class="field" style="margin-bottom:12px"><label for="reason">Reason, if you decline</label><select class="in" id="reason">${DECLINE.map(r=>`<option>${r}</option>`).join('')}</select></div>
+  if(!ADMIN&&b.status==='pending')act=`<div class="field" style="margin-bottom:12px"><label for="reason">Reason, if you decline</label><select class="in" id="reason">${DECLINE.map(r=>`<option>${r}</option>`).join('')}</select></div>
     <div class="btns"><button class="btn primary" data-act="approve" data-id="${b.id}">Approve</button><button class="btn danger" data-act="decline" data-id="${b.id}">Decline</button></div>`;
-  else if(b.status==='approved')act=`<p class="meta" style="margin:0 0 10px">Funds go straight to the borrower's verified bank or e-wallet account. In this prototype the transfer is simulated.</p><button class="btn primary" data-act="release" data-id="${b.id}">Release ${fmtP(o.ticket)} to ${b.id}</button>`;
+  else if(!ADMIN&&b.status==='approved')act=`<p class="meta" style="margin:0 0 10px">Funds go straight to the borrower's verified bank or e-wallet account. In this prototype the transfer is simulated.</p><button class="btn primary" data-act="release" data-id="${b.id}">Release ${fmtP(o.ticket)} to ${b.id}</button>`;
   let extra='';
   if(b.status==='released'){const r=repay(b);extra=`<div class="panel"><h3>Repayment</h3><dl class="terms"><dt>Released</dt><dd>${fmtD(b.releasedAt)}</dd><dt>Payments made</dt><dd>${r.paid} of ${o.term}</dd><dt>Status</dt><dd>${b.dpd?b.dpd+' days late':r.done?'Fully paid':'Current'}</dd>${r.done?'':`<dt>Next due</dt><dd>${fmtD(r.next)}</dd>`}<dt>Collected</dt><dd>${fmtP(r.collected)}</dd><dt>Outstanding</dt><dd>${fmtP(r.outstanding)}</dd></dl></div>`}
   if(b.status==='declined')extra=`<div class="panel"><h3>Declined</h3><p style="margin:0">${esc(b.declineReason)}</p></div>`;
@@ -415,17 +442,20 @@ function closePkg(){const s=document.getElementById('sheet');s.hidden=true;s.inn
 /* ---------- actions ---------- */
 let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
 document.addEventListener('click',e=>{
-  const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act,id=el.dataset.id;
+  const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const a=el.dataset.act,id=el.dataset.id;
+  if(a.startsWith('admin')){if(ADMIN)adminAction(a,id);return}
+  if(ADMIN&&['approve','decline','release','releaseAll','approveClean','batch'].includes(a))return;
+  if(a==='resubmit'){const o=byOrder(id);if(!o||o.reviewStatus!=='changes')return;const msg=document.getElementById('lenderResponse').value.trim();if(!msg)return toast('Add a response to the admin note.');o.reviewStatus='received';o.lenderResponse=msg;record(o,'Resubmitted for review: '+msg);render();return}
   if(a==='open'){openPkg(id);return}
   if(a==='close'){closePkg();return}
   if(a==='filter'){ui.filter=el.dataset.f;render();return}
   const b=state.borrowers.find(x=>x.id===id);
-  if(a==='approve'){b.status='approved';closePkg();toast(b.id+' approved. Release funds when ready.');render()}
-  if(a==='decline'){b.status='declined';b.declineReason=document.getElementById('reason').value;closePkg();toast(b.id+' declined. LoanMatcha has been notified.');render()}
-  if(a==='release'){b.status='released';b.releasedAt=new Date();b.dpd=0;closePkg();toast(fmtP(byOrder(b.orderId).ticket)+' released to '+b.id+'.');render()}
-  if(a==='releaseAll'){const o=byOrder(id);const l=state.borrowers.filter(x=>x.orderId===id&&x.status==='approved');l.forEach(x=>{x.status='released';x.releasedAt=new Date();x.dpd=0});toast(fmtP(l.length*o.ticket)+' released to '+l.length+' borrowers.');render()}
-  if(a==='approveClean'){const l=state.borrowers.filter(x=>x.status==='pending'&&!x.flags.length);l.forEach(x=>x.status='approved');toast(l.length+' borrowers approved. Release funds from each fund allocation.');render()}
-  if(a==='batch'){const o=byOrder(id),s=stats(o),n=Math.min(10,o.count-s.matched);for(let i=0;i<n;i++){const nb=makeBorrower(o,'pending');nb.matchedAt=new Date();state.borrowers.push(nb)}ui.filter='pending';toast('LoanMatcha matched '+n+' new borrowers to '+o.id+'.');render()}
+  if(a==='approve'){if(!b||b.status!=='pending'||!eligible(byOrder(b.orderId)))return;record(byOrder(b.orderId),'Approved '+b.id);b.status='approved';closePkg();toast(b.id+' approved. Release funds when ready.');render()}
+  if(a==='decline'){if(!b||b.status!=='pending')return;record(byOrder(b.orderId),'Declined '+b.id);b.status='declined';b.declineReason=document.getElementById('reason').value;closePkg();toast(b.id+' declined. LoanMatcha has been notified.');render()}
+  if(a==='release'){if(!b||b.status!=='approved'||!eligible(byOrder(b.orderId)))return;b.status='released';b.releasedAt=new Date();b.dpd=0;record(byOrder(b.orderId),'Simulated release to '+b.id);closePkg();toast(fmtP(byOrder(b.orderId).ticket)+' released to '+b.id+'.');render()}
+  if(a==='releaseAll'){const o=byOrder(id);if(!eligible(o))return;const l=state.borrowers.filter(x=>x.orderId===id&&x.status==='approved');l.forEach(x=>{x.status='released';x.releasedAt=new Date();x.dpd=0});record(o,'Simulated release to '+l.length+' approved borrowers');toast(fmtP(l.length*o.ticket)+' released to '+l.length+' borrowers.');render()}
+  if(a==='approveClean'){const l=state.borrowers.filter(x=>x.status==='pending'&&!x.flags.length&&eligible(byOrder(x.orderId)));l.forEach(x=>{x.status='approved';record(byOrder(x.orderId),'Approved '+x.id)});toast(l.length+' borrowers approved. Release funds from each fund allocation.');render()}
+  if(a==='batch')return toast('Switch to Admin to match and submit borrower packages.');
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('sheet').hidden)closePkg()});
 document.addEventListener('input',e=>{if(e.target.closest('#newOrder'))updateCalc()});
@@ -435,28 +465,32 @@ document.addEventListener('submit',e=>{
   const cap=+f.capital.value,n=+f.count.value,score=+f.score.value,rate=+f.rate.value;const errs=[];
   if(!f.title.value.trim())errs.push('Give the allocation a name.');
   if(!(cap>=10000))errs.push('Capital must be at least ₱10,000.');
-  if(!(n>=1)||cap/n<1000)errs.push('Each borrower should get at least ₱1,000. Lower the number of borrowers or raise the capital.');
+  if(!Number.isInteger(n)||!(n>=1)||cap/n<1000)errs.push('Each borrower should get at least ₱1,000. Lower the number of borrowers or raise the capital.');
   if(!ind.length)errs.push('Choose at least one industry.');
   if(!loc.length)errs.push('Choose at least one location.');
   if(!(score>=300&&score<=850))errs.push('Minimum credit score must be between 300 and 850.');
   if(!(rate>0&&rate<=60))errs.push('Interest rate must be between 0 and 60% per year.');
   if(errs.length){document.getElementById('formErr').innerHTML=errs.join('<br>');return}
-  const id='FA-2026-0'+(20+state.orders.length);
-  state.orders.push({id,title:f.title.value.trim(),capital:cap,count:Math.round(n),ticket:Math.round(cap/n),industries:ind,locations:loc,minScore:score,timeline:+f.timeline.value,rate,term:+f.term.value,docs,postedAt:new Date()});
-  ui.filter='pending';toast('Fund allocation created. LoanMatcha has started matching borrowers.');location.hash='order/'+id;
+  const id='FA-'+Date.now();
+  state.orders.push({id,lender:'ABC Bank',reviewStatus:'received',fundingVerified:false,title:f.title.value.trim(),capital:cap,count:n,ticket:cap/n,industries:ind,locations:loc,minScore:score,timeline:+f.timeline.value,rate,term:+f.term.value,docs,postedAt:new Date()});
+  record(byOrder(id),'New fund allocation submitted to IVPH Admin');saveDemo();ui.filter='pending';toast('Allocation submitted. Waiting for IVPH Admin review.');location.hash='order/'+id;
 });
 
 /* ---------- router ---------- */
 function render(){
   const h=location.hash.slice(1)||'orders',[v,arg]=h.split('/');const app=document.getElementById('app');
-  app.innerHTML=v==='order'?vOrder(arg):v==='review'?vReview():v==='portfolio'?vPortfolio():v==='new'?vNew():vOrders();
-  if(v==='new')updateCalc();
+  saveDemo();
+  app.innerHTML=ADMIN?(v==='order'?adminDetail(arg):v==='portfolio'?vPortfolio():adminList()):v==='order'?vOrder(arg):v==='review'?vReview():v==='portfolio'?vPortfolio():v==='new'?vNew():vOrders();
+  if(v==='new'&&!ADMIN)updateCalc();
   const nav=v==='order'||v==='new'?'orders':v;
   document.querySelectorAll('[data-nav]').forEach(a=>{if(a.dataset.nav===nav)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
   const p=state.borrowers.filter(b=>b.status==='pending').length,c=document.getElementById('navcount');c.textContent=p;c.hidden=!p;
 }
 let lastView='';
 window.addEventListener('hashchange',()=>{const v=(location.hash.slice(1)||'orders').split('/')[0];if(v!==lastView)ui.filter='pending';lastView=v;closePkg();render();window.scrollTo(0,0)});
+if(ADMIN){document.title='LoanMatcha Fund Allocations Admin';document.querySelector('.prod').textContent='Allocations Admin';document.querySelector('.lender span').innerHTML='IVPH Team<small>Allocation operations</small>';document.querySelector('[data-nav="review"]').hidden=true;document.getElementById('switchView').href='/workspace';document.getElementById('switchView').textContent='Switch to Lender';}
+window.addEventListener('storage',e=>{if(e.key===STORE&&loadDemo()){closePkg();render()}});
+window.addEventListener('pageshow',()=>{if(loadDemo())render()});
 render();
 </script>
 </body>

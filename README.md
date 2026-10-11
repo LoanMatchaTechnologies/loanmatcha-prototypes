@@ -1,28 +1,11 @@
-# LoanMatcha Partners Demo
+# LoanMatcha demo
 
-Includes the original Partners Admin and Loan Channeling Workspace prototypes with synthetic data.
+Static demo hosted on Vercel. No real financial transactions or backend authentication.
 
-## Deploy to Vercel
+- `/admin`: lender onboarding
+- `/workspace`: lender allocations, decisions and simulated releases
+- `/workspace?view=admin`: IVPH allocation review, funding verification, candidate matching and submission
 
-1. Create a GitHub repository named `loanmatcha-partners-demo`.
-2. Upload all files from this folder directly into the repository root, including `vercel.json`.
-3. In Vercel, add a new project and import that repository.
-4. Select framework preset **Other**. Leave the build command unset and the output directory unset (the project root).
-5. Deploy. The home page links to `/admin` and `/workspace`.
+Allocation state is saved in localStorage and shared across Admin and Lender tabs in the same browser. It does not sync across devices. Synthetic sample data only.
 
-No installation, database, environment variables or API keys are required.
-
-## Demo behavior
-
-- Admin: KYL queue, document checks, simulated AML screening, risk review, activation and audit trail.
-- Workspace: fund allocations, borrower review, simulated approvals/releases and portfolio.
-- All changes are held in page memory and reset when the page reloads.
-- The two demos have independent sample data; changes do not sync between them.
-- No login is implemented. The sample account name is a display label.
-- No messages, screening requests or money transfers are sent.
-- Fonts use Google Fonts; a system font is available as fallback.
-- The noindex header discourages indexing but does not restrict access.
-
-## Verification
-
-JavaScript initial rendering, listed routes, sample partner activation and borrower approval/release were checked with a simulated DOM. Full visual browser QA and actual Vercel deployment are pending.
+New allocation lifecycle: lender submission → admin approval → sample funding-reference verification → candidate matching → admin submission → lender decision → simulated release and portfolio. Admin may request changes or decline before approval. Activity records are included.
