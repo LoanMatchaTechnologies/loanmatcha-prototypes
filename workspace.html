@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LoanMatcha Lender Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* loan matcha Partners: cream ground, deep matcha green actions, slate-blue + sage wordmark, coral for urgency */
+  --bg:#FFFFFF; --surface:#FFFFFF; --ink:#1E2A22; --muted:#6A7469; --line:#E8E8E3;
+  --leaf:#8FB59A; --matcha:#3A533E; --forest:#2C4231; --matcha-soft:#E2EDE4;
+  --amber:#D2603F; --amber-soft:#FBE7E0; --red:#A93A2A; --red-soft:#F6DEDA;
+  --slate:#4B5D97; --sage:#7DA287; --mono:'Courier Prime','Courier New',ui-monospace,monospace;
+  --on-primary:#FFFFFF; --shadow:none; color-scheme:light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2.5px solid var(--matcha);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+h1,h2,h3{margin:0;line-height:1.2;letter-spacing:-.01em}
+h1{font-size:clamp(1.6rem,4vw,2.1rem);font-weight:800}
+h2{font-size:1.15rem;font-weight:700}
+h3{font-size:.98rem;font-weight:700;margin-bottom:8px}
+.sub{color:var(--muted);margin:6px 0 0;max-width:60ch}
+.meta{color:var(--muted);font-size:.86rem}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:6px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand svg{width:38px;height:30px;flex:none}
+.wm{font-weight:500;font-size:1.45rem;letter-spacing:-.01em;line-height:1}
+.wl{color:var(--slate)} .wmm{color:var(--sage)}
+.prod{font-weight:700;font-size:1.02rem;color:var(--forest);padding-left:12px;margin-left:2px;border-left:1.5px solid var(--line);line-height:1.6}
+.lender span small{display:block;font-weight:500;font-size:.76rem;color:var(--muted)}
+.lender{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.92rem}
+.lender i{width:30px;height:30px;border-radius:50%;background:var(--matcha-soft);color:var(--forest);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:.78rem}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs a{padding:10px 12px 11px;text-decoration:none;font-weight:600;color:var(--muted);border-bottom:2.5px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.tabs a[aria-current="page"]{color:var(--ink);border-color:var(--matcha)}
+.count{background:var(--amber);color:#fff;border-radius:99px;font-size:.72rem;padding:1px 7px;font-weight:700}
+.proto{font-size:.82rem;color:var(--muted);padding-top:12px;margin:0}
+.proto b{color:var(--ink)}
+
+main{padding-top:22px;padding-bottom:64px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.back{display:inline-block;margin-bottom:10px;text-decoration:none;color:var(--matcha);font-weight:600;font-size:.92rem}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line);background:var(--surface);padding:10px 16px;border-radius:10px;font-weight:700;text-decoration:none;cursor:pointer;min-height:44px}
+.btn.primary{background:var(--matcha);border-color:var(--matcha);color:var(--on-primary)}
+.btn.danger{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
+.btn:hover{filter:brightness(.97)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:26px}
+.kpi{padding:14px 16px;box-shadow:1px 0 0 var(--line),0 1px 0 var(--line)}
+.kpi span{display:block;font-size:.84rem;color:var(--muted)}
+.kpi b{display:block;font-size:1.45rem;font-weight:800;margin-top:2px}
+.kpi small{color:var(--muted);font-size:.8rem}
+
+/* order card */
+.order{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.order:hover{border-color:color-mix(in srgb,var(--matcha) 45%,var(--line))}
+.order-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px}
+.pill{font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--matcha-soft);color:var(--forest);white-space:nowrap}
+.pill.late{background:var(--red-soft);color:var(--red)}
+.order-foot{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:14px;font-size:.93rem}
+.order-foot .warn b{color:var(--amber)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{font-size:.8rem;padding:3px 10px;border-radius:8px;border:1px solid var(--line);color:var(--muted)}
+
+/* the borrower dot field */
+.dots{display:grid;grid-template-columns:repeat(auto-fill,11px);gap:5px}
+.d{width:11px;height:11px;border-radius:50%;display:block}
+.d.e{box-shadow:inset 0 0 0 1.5px var(--line)}
+.d.p{background:var(--amber)}
+.d.a{background:var(--leaf)}
+.d.r{background:var(--forest)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.8rem;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .d{width:9px;height:9px}
+
+/* pipeline */
+.pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 22px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;position:relative}
+.stage .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.75rem;font-weight:800;background:var(--matcha-soft);color:var(--forest);margin-bottom:8px}
+.stage b{display:block;font-size:1.25rem;font-weight:800}
+.stage span{font-size:.82rem;color:var(--muted)}
+.stage .who{font-size:.74rem;font-weight:700;color:var(--matcha);display:block;margin-top:4px}
+@media (max-width:640px){.pipe{grid-template-columns:repeat(2,1fr)}}
+
+.grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.panel + .panel{margin-top:18px}
+dl.terms{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0;font-size:.93rem}
+dl.terms dt{color:var(--muted)}
+dl.terms dd{margin:0;font-weight:600;text-align:right}
+
+/* segmented filter */
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.seg button{border:1.5px solid var(--line);background:transparent;border-radius:99px;padding:6px 12px;font-weight:600;font-size:.86rem;cursor:pointer;min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* borrower rows */
+.rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.row{display:grid;grid-template-columns:1fr auto auto auto;gap:14px;align-items:center;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;width:100%}
+.row:last-child{border-bottom:0}
+.row:hover{background:color-mix(in srgb,var(--matcha-soft) 55%,transparent)}
+.r-main b{display:block;font-weight:700}
+.r-num{text-align:right;font-weight:700;font-size:.95rem}
+.r-num small{display:block;font-weight:500;color:var(--muted);font-size:.74rem}
+@media (max-width:560px){.row{grid-template-columns:1fr auto}.row .r-num.hide-s{display:none}}
+.badge{font-size:.76rem;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.b-pending{background:var(--amber-soft);color:var(--amber)}
+.b-approved{background:var(--matcha-soft);color:var(--matcha)}
+.b-released{background:var(--matcha-soft);color:var(--forest)}
+.b-late{background:var(--red-soft);color:var(--red)}
+.b-declined{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.empty{padding:28px 18px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);margin-bottom:4px}
+
+/* bulk bar */
+.bulk{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--matcha-soft);border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:.93rem}
+
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:50;display:flex;justify-content:flex-end}
+#sheet[hidden]{display:none}
+.scrim{position:absolute;inset:0;background:rgba(10,20,12,.45)}
+.sheet{position:relative;background:var(--bg);width:min(520px,100%);height:100%;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 24px);animation:slide .22s ease-out}
+@keyframes slide{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}
+@media (max-width:600px){#sheet{align-items:flex-end}.sheet{height:92%;border-radius:18px 18px 0 0;animation-name:rise}@keyframes rise{from{transform:translateY(30px)}to{transform:none}}}
+.sheet-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px}
+.x{border:0;background:var(--surface);width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:1.3rem;line-height:1;flex:none;border:1px solid var(--line)}
+.checks{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px;font-size:.93rem}
+.checks li{display:flex;gap:9px;align-items:flex-start}
+.ok{color:var(--matcha);font-weight:800;flex:none;width:18px}
+.no{color:var(--red);font-weight:800;flex:none;width:18px}
+.note{background:var(--amber-soft);border-radius:10px;padding:9px 12px;font-size:.88rem;margin-top:8px}
+.actions{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom,0px));background:var(--bg);padding:14px 0 6px;margin-top:16px;border-top:1px solid var(--line)}
+select.in,input.in{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);min-height:44px}
+
+/* form */
+.form{display:grid;gap:18px}
+.field label,.field legend{display:block;font-weight:700;margin-bottom:6px;font-size:.95rem}
+.field .hint{font-size:.83rem;color:var(--muted);margin-top:5px}
+fieldset.field{border:0;padding:0;margin:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.two{grid-template-columns:1fr}}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.opt span{display:inline-block;padding:7px 13px;border-radius:99px;border:1.5px solid var(--line);font-weight:600;font-size:.88rem;background:var(--surface)}
+.opt input:checked + span{background:var(--matcha);border-color:var(--matcha);color:var(--on-primary)}
+.opt input:focus-visible + span{outline:2.5px solid var(--matcha);outline-offset:2px}
+.calc{background:var(--matcha-soft);border-radius:12px;padding:12px 14px;font-size:.93rem}
+.calc b{font-size:1.1rem}
+.err{color:var(--red);font-size:.86rem;font-weight:600;margin-top:6px}
+
+/* charts */
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:grid;grid-template-columns:92px 1fr 70px;gap:10px;align-items:center;font-size:.88rem}
+.track{height:10px;border-radius:99px;background:var(--matcha-soft);overflow:hidden}
+.fill{height:100%;border-radius:99px}
+.chart-svg{width:100%;height:auto;display:block}
+.chart-svg .bar{fill:var(--matcha)}
+.chart-svg text{fill:var(--muted);font-size:17px;font-family:Figtree,sans-serif}
+.chart-svg line{stroke:var(--line)}
+
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-weight:600;font-size:.92rem;opacity:0;pointer-events:none;transition:.2s;z-index:60;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.kpi b,.r-num,dl.terms dd,.stage b,.order-foot b,.calc b,.bar-row b{font-family:var(--mono);font-weight:700;letter-spacing:-.01em}
+.badge,.pill,.chip{font-family:var(--mono);font-weight:700}
+.order,.panel,.stage,.kpis,.rows{border-radius:16px}
+.btn{border-radius:10px}
+.journey{list-style:none;padding:0;margin:0 0 22px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.journey li{display:flex;flex-direction:column;gap:2px;padding-top:10px;border-top:3px solid var(--line);font-size:.86rem}
+.journey li span{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.journey li small{color:var(--muted)}
+.journey li.done{border-color:var(--matcha)}
+.journey li.now{border-color:var(--sage)}
+@media (max-width:640px){.journey{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:12px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#orders" aria-label="LoanMatcha lender workspace, home">
+      <span class="wm"><span class="wl">loan</span> <span class="wmm">matcha</span></span><span class="prod">Partners</span>
+    </a>
+    <div class="lender"><i aria-hidden="true">AB</i><span>ABC Bank<small>Growth Partner</small></span></div>
+  </div>
+  <nav class="wrap tabs" aria-label="Main">
+    <a href="#orders" data-nav="orders">Fund allocations</a>
+    <a href="#review" data-nav="review">Review queue <span class="count" id="navcount"></span></a>
+    <a href="#portfolio" data-nav="portfolio">Portfolio</a>
+  </nav>
+</header>
+<p class="wrap proto"><b>Prototype.</b> Synthetic borrowers and a sample lender. Borrowers appear by loan account number only. Credit checks, approvals and fund releases are simulated, and no real money moves.</p>
+<main id="app" class="wrap"></main>
+<div id="sheet" hidden></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- helpers ---------- */
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(20260925);
+const pick=a=>a[Math.floor(R()*a.length)];
+const DAY=864e5, TODAY=new Date();
+const days=n=>new Date(TODAY.getTime()+n*DAY);
+const fmtP=n=>'₱'+Math.round(n).toLocaleString('en-PH');
+const fmtM=n=>n>=1e6?'₱'+(Math.round(n/1e5)/10).toLocaleString('en-PH')+'M':n>=1e3?'₱'+Math.round(n/1e3)+'k':fmtP(n);
+const fmtD=d=>d.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function amort(P,pa,n){const r=pa/100/12;return r?P*r/(1-Math.pow(1+r,-n)):P/n}
+function balance(P,pa,n,k){const r=pa/100/12,M=amort(P,pa,n);if(!r)return Math.max(0,P-M*k);return Math.max(0,P*Math.pow(1+r,k)-M*(Math.pow(1+r,k)-1)/r)}
+
+/* ---------- reference data ---------- */
+const INDUSTRIES=['Retail','MSME','BPO','Manufacturing','Healthcare','Education','Government'];
+const PROVINCES=['NCR','Laguna','Cavite','Rizal','Bulacan','Batangas','Pampanga','Cebu','Davao'];
+const DOCS=['Government-issued ID','Selfie with ID','Proof of address','Latest payslip','Certificate of employment','Bank or e-wallet statement'];
+const OFFICERS=['J. Lim','R. Cabrera','M. Uy'];
+const DOCS_EMP=['Government-issued ID','Selfie with ID','Proof of address','Latest payslip (3 months)','Certificate of employment','Bank or e-wallet statement (3 months)'];
+const DOCS_BIZ=['Government-issued ID','Selfie with ID','Proof of address','DTI or SEC registration','Mayor’s or business permit','Bank statement (6 months)'];
+const PURPOSE_EMP=['Home repair','Tuition for a child','Medical bills of a family member','Consolidate a credit card balance','Appliance purchase'];
+const PURPOSE_BIZ=['Restock inventory','Buy equipment','Working capital for a large order','Open a second branch','Renovate the store'];
+const INTERVIEW_OK=['Clear purpose and steady income. Comfortable with the monthly payment. Recommended.','Answers matched the documents. Has savings to cover one month of payments. Recommended.','Stable household budget, no other active loans. Recommended.'];
+const INTERVIEW_NOTE=['Income is seasonal; borrower prefers due dates after peak sales weeks. Recommended with note.','Has one small active loan, ending in two months. Recommended with note.'];
+const DECLINE=['Outside our internal exposure limit for this employer','Payment-to-income ratio above our policy','Employer not on our accredited list','Incomplete employment verification'];
+
+/* ---------- state ---------- */
+const state={orders:[],borrowers:[]};
+let seq=1000;
+const acct=n=>'LA-26-'+String(n).padStart(5,'0');
+const fmtP2=n=>'₱'+Number(n).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+function makeBorrower(o,status){
+  const ind=pick(o.industries),prov=pick(o.locations);
+  const M=amort(o.ticket,o.rate,o.term);
+  const biz=R()<(ind==='MSME'?0.7:ind==='Retail'?0.35:0.08);
+  const income=Math.round(M/(0.12+R()*0.23)/500)*500*(biz?2.5:1);
+  const b={id:acct(++seq),orderId:o.id,type:biz?'Business owner':'Employee',industry:ind,province:prov,
+    score:o.minScore+Math.floor(R()*Math.max(40,(850-o.minScore)*0.7)),income,tenure:1+Math.floor(R()*9),
+    purpose:pick(biz?PURPOSE_BIZ:PURPOSE_EMP),docsIn:biz?DOCS_BIZ:DOCS_EMP,
+    status,matchedAt:days(-1-Math.floor(R()*20)),officer:pick(OFFICERS),flags:[]};
+  b.interview=R()<0.8?pick(INTERVIEW_OK):pick(INTERVIEW_NOTE);
+  if(R()<0.15)b.flags.push('Payslip and bank statement income differ by '+(5+Math.floor(R()*10))+'%, within LoanMatcha tolerance.');
+  if(R()<0.08)b.flags.push('Address on ID differs from proof of address. LoanMatcha confirmed the current address.');
+  if(status==='released'){b.releasedAt=days(-3-Math.floor(R()*80));const u=R();b.dpd=u<0.86?0:u<0.95?1+Math.floor(R()*29):31+Math.floor(R()*40)}
+  if(status==='declined')b.declineReason=pick(DECLINE);
+  return b;
+}
+function addOrder(o,mix){state.orders.push(o);for(const[s,n]of Object.entries(mix||{}))for(let i=0;i<n;i++)state.borrowers.push(makeBorrower(o,s))}
+addOrder({id:'FA-2026-014',title:'Retail and MSME employees, South Luzon',capital:20e6,count:200,ticket:100000,industries:['Retail','MSME'],locations:['NCR','Laguna','Cavite'],minScore:650,timeline:3,rate:18,term:12,docs:[...DOCS],postedAt:days(-41)},{released:62,approved:24,declined:9,pending:46});
+addOrder({id:'FA-2026-019',title:'BPO salary loans, Metro Manila',capital:5e6,count:100,ticket:50000,industries:['BPO'],locations:['NCR','Rizal'],minScore:620,timeline:2,rate:21,term:6,docs:[...DOCS],postedAt:days(-9)},{approved:4,declined:1,pending:17});
+
+const byOrder=id=>state.orders.find(o=>o.id===id);
+function stats(o){const bs=state.borrowers.filter(b=>b.orderId===o.id);const c={pending:0,approved:0,released:0,declined:0,bs};bs.forEach(b=>c[b.status]++);c.matched=c.pending+c.approved+c.released;c.releasedAmt=c.released*o.ticket;return c}
+function repay(b){const o=byOrder(b.orderId);const M=amort(o.ticket,o.rate,o.term);const elapsed=Math.floor((TODAY-b.releasedAt)/(30*DAY));const due=Math.min(o.term,elapsed);const paid=Math.max(0,due-(b.dpd?Math.ceil(b.dpd/30):0));
+  const next=new Date(b.releasedAt.getTime()+(paid+1)*30*DAY);return{M,due,paid,collected:paid*M,outstanding:balance(o.ticket,o.rate,o.term,paid),next,done:paid>=o.term}}
+
+/* ---------- ui bits ---------- */
+function profileLine(b){return b.type+', '+b.tenure+' yr'+(b.tenure>1?'s':'')+(b.type==='Business owner'?' in business':' employed')+', '+fmtP(b.income)+(b.type==='Business owner'?' monthly cash flow':' monthly income')+', '+b.province}
+function profileText(b){return b.type+(b.type==='Business owner'?' in '+(b.industry===b.industry.toUpperCase()?b.industry:b.industry.toLowerCase())+', '+b.tenure+' year'+(b.tenure>1?'s':'')+' in the business with '+fmtP2(b.income)+' monthly cash flow.':' in the '+(b.industry===b.industry.toUpperCase()?b.industry:b.industry.toLowerCase())+' sector, '+b.tenure+' year'+(b.tenure>1?'s':'')+' with the current employer, earning '+fmtP2(b.income)+' a month.')+' Loan purpose: '+b.purpose.toLowerCase()+'. Submitted '+b.docsIn.length+' of '+b.docsIn.length+' documents. Interview: '+b.interview}
+const kpi=(l,v,s)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${s?`<small>${s}</small>`:''}</div>`;
+function badge(b){if(b.status==='pending')return'<span class="badge b-pending">To review</span>';if(b.status==='approved')return'<span class="badge b-approved">Approved</span>';if(b.status==='declined')return'<span class="badge b-declined">Declined</span>';
+  return b.dpd?`<span class="badge b-late">${b.dpd} days late</span>`:'<span class="badge b-released">Released</span>'}
+function row(b,showOrder){return`<button class="row" data-act="open" data-id="${b.id}"><span class="r-main"><b>${b.id}</b><span class="meta">${showOrder?b.orderId+', ':''}${esc(profileLine(b))}</span></span><span class="r-num hide-s">${b.score}<small>credit score</small></span><span class="r-num hide-s">${fmtM(byOrder(b.orderId).ticket)}<small>loan</small></span>${badge(b)}</button>`}
+function rows(list,showOrder,emptyMsg){return list.length?`<div class="rows">${list.map(b=>row(b,showOrder)).join('')}</div>`:`<div class="rows"><div class="empty">${emptyMsg}</div></div>`}
+function dots(o,s){const unit=o.count>300?Math.ceil(o.count/200):1,slots=Math.ceil(o.count/unit);let h='';
+  for(let i=0;i<slots;i++){const k=i*unit;h+=`<i class="d ${k<s.released?'r':k<s.released+s.approved?'a':k<s.matched?'p':'e'}"></i>`}
+  return`<div class="dots" role="img" aria-label="${s.released} released, ${s.approved} approved, ${s.pending} waiting for review, ${o.count-s.matched} not yet matched">${h}</div>
+  <div class="legend"><span><i class="d r"></i>Released ${s.released}</span><span><i class="d a"></i>Approved ${s.approved}</span><span><i class="d p"></i>To review ${s.pending}</span><span><i class="d e"></i>Not yet matched ${Math.max(0,o.count-s.matched)}</span>${unit>1?`<span>Each dot is ${unit} borrowers</span>`:''}</div>`}
+function chips(o){return[fmtP(o.ticket)+' each',o.rate+'% p.a., '+o.term+' months','Credit score '+o.minScore+'+',o.industries.join(', '),o.locations.join(', ')].map(c=>`<span class="chip">${esc(c)}</span>`).join('')}
+function daysLeft(o){return Math.ceil((o.postedAt.getTime()+o.timeline*30*DAY-TODAY)/DAY)}
+
+/* ---------- views ---------- */
+function vOrders(){
+  let cap=0,rel=0,pend=0;state.orders.forEach(o=>{const s=stats(o);cap+=o.capital;rel+=s.releasedAmt;pend+=s.pending});
+  return`<div class="head"><div><h1>Fund allocations</h1><p class="sub">Allocate your capital and set who you want to lend to. LoanMatcha sources, screens and interviews borrowers who fit, and you make the final decision on each one.</p></div><a class="btn primary" href="#new">New fund allocation</a></div>
+  <ol class="journey" aria-label="Your lender journey">${[['Onboard','Done'],['Verify capital','Done'],['Explore and select','Now'],['Deploy capital','Now'],['Monitor and earn','Ongoing']].map(([t,st],i)=>`<li class="${st==='Done'?'done':'now'}"><span>${String(i+1).padStart(2,'0')}</span><b>${t}</b><small>${st}</small></li>`).join('')}</ol>
+  <div class="kpis">${kpi('Capital committed',fmtM(cap),state.orders.length+' active allocations')}${kpi('Released to borrowers',fmtM(rel),Math.round(rel/cap*100)+'% of committed')}${kpi('Waiting for your review',pend,'borrowers matched by LoanMatcha')}</div>
+  ${state.orders.slice().reverse().map(o=>{const s=stats(o),l=daysLeft(o);return`<a class="order" href="#order/${o.id}">
+    <div class="order-top"><div><h2>${esc(o.title)}</h2><p class="meta">${o.id}, allocated ${fmtD(o.postedAt)}</p></div><span class="pill ${l<=0?'late':''}">${l>0?l+' days left':'Timeline ended'}</span></div>
+    ${dots(o,s)}
+    <div class="order-foot"><span><b>${s.matched}</b> of ${o.count} borrowers matched</span><span><b>${fmtM(s.releasedAmt)}</b> of ${fmtM(o.capital)} released</span>${s.pending?`<span class="warn"><b>${s.pending}</b> to review</span>`:''}</div>
+    <div class="chips">${chips(o)}</div></a>`}).join('')}`;
+}
+
+const ui={filter:'pending'};
+function vOrder(id){
+  const o=byOrder(id);if(!o)return`<a class="back" href="#orders">Back to fund allocations</a><div class="empty"><b>Fund allocation not found</b>Go back to your fund allocations and pick one from the list.</div>`;
+  const s=stats(o),l=daysLeft(o),room=o.count-s.matched;
+  const list=s.bs.filter(b=>b.status===ui.filter).sort((a,b)=>(b.dpd||0)-(a.dpd||0));
+  const empties={pending:'<b>Nothing to review</b>LoanMatcha will add borrowers here as they are qualified.',approved:'<b>No approved borrowers waiting</b>Borrowers you approve appear here until you release funds.',released:'<b>No releases yet</b>Released loans appear here with their repayment status.',declined:'<b>No declined borrowers</b>'};
+  return`<a class="back" href="#orders">Back to fund allocations</a>
+  <div class="head"><div><h1>${esc(o.title)}</h1><p class="sub">${o.id}. Allocated ${fmtD(o.postedAt)}, ${l>0?l+' days left in the fill timeline':'fill timeline ended'}.</p></div>
+  <div class="btns">${s.approved?`<button class="btn primary" data-act="releaseAll" data-id="${o.id}">Release ${s.approved} approved (${fmtM(s.approved*o.ticket)})</button>`:''}<button class="btn" data-act="batch" data-id="${o.id}" ${room<=0?'disabled':''}>Simulate new matches</button></div></div>
+  <div class="pipe">
+    <div class="stage"><div class="n">1</div><b>${fmtM(o.capital)}</b><span>Funds allocated</span><span class="who">You</span></div>
+    <div class="stage"><div class="n">2</div><b>${s.matched}/${o.count}</b><span>Matched and qualified</span><span class="who">LoanMatcha</span></div>
+    <div class="stage"><div class="n">3</div><b>${s.approved+s.released}</b><span>Approved, ${s.pending} to review</span><span class="who">You</span></div>
+    <div class="stage"><div class="n">4</div><b>${fmtM(s.releasedAmt)}</b><span>Released to ${s.released} borrowers</span><span class="who">You</span></div>
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="panel" style="margin-bottom:18px">${dots(o,s)}</div>
+      <div class="seg" role="group" aria-label="Filter borrowers">${[['pending','To review',s.pending],['approved','Approved',s.approved],['released','Released',s.released],['declined','Declined',s.declined]].map(([k,t,n])=>`<button data-act="filter" data-f="${k}" aria-pressed="${ui.filter===k}">${t} ${n}</button>`).join('')}</div>
+      ${rows(list,false,empties[ui.filter])}
+    </div>
+    <div>
+      <div class="panel"><h3>Allocation terms</h3><dl class="terms">
+        <dt>Capital</dt><dd>${fmtP(o.capital)}</dd><dt>Borrowers</dt><dd>${o.count} at ${fmtP(o.ticket)}</dd>
+        <dt>Interest</dt><dd>${o.rate}% p.a.</dd><dt>Loan term</dt><dd>${o.term} months</dd>
+        <dt>Monthly payment</dt><dd>${fmtP(amort(o.ticket,o.rate,o.term))}</dd><dt>Fill timeline</dt><dd>${o.timeline} months</dd>
+        <dt>Industries</dt><dd>${esc(o.industries.join(', '))}</dd><dt>Locations</dt><dd>${esc(o.locations.join(', '))}</dd><dt>Minimum score</dt><dd>${o.minScore}</dd></dl></div>
+      <div class="panel"><h3>Required documents</h3><ul class="checks">${o.docs.map(d=>`<li><span class="ok">✓</span>${esc(d)}</li>`).join('')}</ul></div>
+    </div>
+  </div>`;
+}
+
+function vReview(){
+  const list=state.borrowers.filter(b=>b.status==='pending').sort((a,b)=>a.matchedAt-b.matchedAt);
+  const clean=list.filter(b=>!b.flags.length).length;
+  return`<div class="head"><div><h1>Review queue</h1><p class="sub">Borrowers LoanMatcha has matched to your fund allocations. Each one has passed ID, income and document checks. Oldest first.</p></div></div>
+  ${list.length&&clean?`<div class="bulk"><span><b>${clean}</b> of ${list.length} files have no notes from LoanMatcha.</span><button class="btn primary" data-act="approveClean">Approve ${clean} files with no notes</button></div>`:''}
+  ${rows(list,true,'<b>You are all caught up</b>New matches from LoanMatcha will appear here.')}`;
+}
+
+function vPortfolio(){
+  const rel=state.borrowers.filter(b=>b.status==='released');
+  let released=0,out=0,coll=0,par=0;const buckets={Current:0,'1 to 30 days':0,'31 to 60 days':0,'61+ days':0};
+  rel.forEach(b=>{const o=byOrder(b.orderId),r=repay(b);released+=o.ticket;out+=r.outstanding;coll+=r.collected;if(b.dpd>30)par+=r.outstanding;
+    buckets[!b.dpd?'Current':b.dpd<=30?'1 to 30 days':b.dpd<=60?'31 to 60 days':'61+ days']+=r.outstanding});
+  const weeks=12,w=Array(weeks).fill(0);rel.forEach(b=>{const i=weeks-1-Math.floor((TODAY-b.releasedAt)/(7*DAY));if(i>=0)w[i]+=byOrder(b.orderId).ticket});
+  const mx=Math.max(...w,1),W=600,H=180,bw=W/weeks;
+  const svg=`<svg class="chart-svg" viewBox="0 0 ${W} ${H+24}" role="img" aria-label="Amount released per week, last 12 weeks"><line x1="0" x2="${W}" y1="${H}" y2="${H}"/>${w.map((v,i)=>{const h=v/mx*(H-20);return`<rect class="bar" x="${i*bw+bw*.18}" y="${H-h}" width="${bw*.64}" height="${h}" rx="4"/>${v?`<text x="${i*bw+bw/2}" y="${H-h-6}" text-anchor="middle">${fmtM(v)}</text>`:''}`}).join('')}${w.map((v,i)=>i%2?'':`<text x="${i*bw+bw/2}" y="${H+17}" text-anchor="middle">${i===weeks-1?'This wk':(weeks-1-i)+'w ago'}</text>`).join('')}</svg>`;
+  const colors={Current:'var(--matcha)','1 to 30 days':'var(--amber)','31 to 60 days':'var(--red)','61+ days':'var(--red)'};
+  const late=rel.filter(b=>b.dpd).sort((a,b)=>b.dpd-a.dpd);
+  return`<div class="head"><div><h1>Portfolio</h1><p class="sub">Loans you have released through LoanMatcha, with repayment status as agreed with LoanMatcha.</p></div></div>
+  <div class="kpis">${kpi('Released',fmtM(released),rel.length+' loans')}${kpi('Outstanding principal',fmtM(out))}${kpi('Collected so far',fmtM(coll))}${kpi('Portfolio at risk, 30+ days',out?(par/out*100).toFixed(1)+'%':'0%',fmtM(par)+' outstanding')}</div>
+  <div class="grid2"><div class="panel"><h3>Released per week</h3>${svg}</div>
+  <div class="panel"><h3>Outstanding by days late</h3><div class="bars">${Object.entries(buckets).map(([k,v])=>`<div class="bar-row"><span>${k}</span><div class="track"><div class="fill" style="width:${out?v/out*100:0}%;background:${colors[k]}"></div></div><b style="text-align:right">${fmtM(v)}</b></div>`).join('')}</div></div></div>
+  <h2 style="margin:26px 0 12px">Late accounts</h2>${rows(late,true,'<b>No late accounts</b>Every released loan is current.')}`;
+}
+
+function vNew(){
+  const opt=(name,v,on)=>`<label class="opt"><input type="checkbox" name="${name}" value="${esc(v)}" ${on?'checked':''}><span>${esc(v)}</span></label>`;
+  return`<a class="back" href="#orders">Back to fund allocations</a>
+  <div class="head"><div><h1>New fund allocation</h1><p class="sub">Set how much capital to allocate and who you want to lend to. LoanMatcha starts matching qualified borrowers right away.</p></div></div>
+  <form class="panel form" id="newOrder" novalidate>
+    <div class="field"><label for="f-title">Allocation name</label><input class="in" id="f-title" name="title" placeholder="Example: Retail employees, Cavite" required></div>
+    <div class="two">
+      <div class="field"><label for="f-cap">Capital to deploy (₱)</label><input class="in" id="f-cap" name="capital" type="number" inputmode="numeric" min="10000" step="1000" value="20000000"></div>
+      <div class="field"><label for="f-count">Number of borrowers</label><input class="in" id="f-count" name="count" type="number" inputmode="numeric" min="1" value="200"></div>
+    </div>
+    <div class="calc" id="calc"></div>
+    <fieldset class="field"><legend>Borrower industries</legend><div class="opts">${INDUSTRIES.map(i=>opt('ind',i,i==='Retail'||i==='MSME')).join('')}</div></fieldset>
+    <fieldset class="field"><legend>Borrower locations</legend><div class="opts">${PROVINCES.map(p=>opt('loc',p,['NCR','Laguna','Cavite'].includes(p))).join('')}</div></fieldset>
+    <div class="two">
+      <div class="field"><label for="f-score">Minimum credit score</label><input class="in" id="f-score" name="score" type="number" min="300" max="850" value="650"></div>
+      <div class="field"><label for="f-time">Fill timeline</label><select class="in" id="f-time" name="timeline">${[1,2,3,4,6].map(m=>`<option value="${m}" ${m===3?'selected':''}>Within ${m} month${m>1?'s':''}</option>`).join('')}</select></div>
+    </div>
+    <div class="two">
+      <div class="field"><label for="f-rate">Interest rate (% per year)</label><input class="in" id="f-rate" name="rate" type="number" min="1" max="60" step="0.5" value="18"></div>
+      <div class="field"><label for="f-term">Loan term (months)</label><select class="in" id="f-term" name="term">${[3,6,9,12,18,24].map(m=>`<option ${m===12?'selected':''}>${m}</option>`).join('')}</select></div>
+    </div>
+    <fieldset class="field"><legend>Required documents</legend><div class="opts">${DOCS.map(d=>opt('doc',d,true)).join('')}</div></fieldset>
+    <div id="formErr" class="err" role="alert"></div>
+    <div class="btns"><button class="btn primary" type="submit">New fund allocation</button><a class="btn" href="#orders">Cancel</a></div>
+  </form>`;
+}
+function updateCalc(){const f=document.getElementById('newOrder');if(!f)return;const cap=+f.capital.value,n=+f.count.value,rate=+f.rate.value,term=+f.term.value;
+  const t=n>0?cap/n:0;document.getElementById('calc').innerHTML=t>0?`Each borrower gets <b>${fmtP(t)}</b>, paying about <b>${fmtP(amort(t,rate,term))}</b> a month over ${term} months.`:'Enter capital and number of borrowers to see the loan size.'}
+
+/* ---------- borrower package sheet ---------- */
+function openPkg(id){
+  const b=state.borrowers.find(x=>x.id===id),o=byOrder(b.orderId),M=amort(o.ticket,o.rate,o.term),pti=M/b.income*100;
+  const fit=[[o.industries.includes(b.industry),'Industry: '+b.industry],[o.locations.includes(b.province),'Location: '+b.province],[b.score>=o.minScore,'Credit score '+b.score+' (your minimum is '+o.minScore+')'],[true,'All '+o.docs.length+' required documents submitted']];
+  let act='';
+  if(b.status==='pending')act=`<div class="field" style="margin-bottom:12px"><label for="reason">Reason, if you decline</label><select class="in" id="reason">${DECLINE.map(r=>`<option>${r}</option>`).join('')}</select></div>
+    <div class="btns"><button class="btn primary" data-act="approve" data-id="${b.id}">Approve</button><button class="btn danger" data-act="decline" data-id="${b.id}">Decline</button></div>`;
+  else if(b.status==='approved')act=`<p class="meta" style="margin:0 0 10px">Funds go straight to the borrower's verified bank or e-wallet account. In this prototype the transfer is simulated.</p><button class="btn primary" data-act="release" data-id="${b.id}">Release ${fmtP(o.ticket)} to ${b.id}</button>`;
+  let extra='';
+  if(b.status==='released'){const r=repay(b);extra=`<div class="panel"><h3>Repayment</h3><dl class="terms"><dt>Released</dt><dd>${fmtD(b.releasedAt)}</dd><dt>Payments made</dt><dd>${r.paid} of ${o.term}</dd><dt>Status</dt><dd>${b.dpd?b.dpd+' days late':r.done?'Fully paid':'Current'}</dd>${r.done?'':`<dt>Next due</dt><dd>${fmtD(r.next)}</dd>`}<dt>Collected</dt><dd>${fmtP(r.collected)}</dd><dt>Outstanding</dt><dd>${fmtP(r.outstanding)}</dd></dl></div>`}
+  if(b.status==='declined')extra=`<div class="panel"><h3>Declined</h3><p style="margin:0">${esc(b.declineReason)}</p></div>`;
+  const s=document.getElementById('sheet');
+  s.innerHTML=`<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pkgTitle">
+    <div class="sheet-head"><div><p class="meta" style="margin:0 0 2px">${o.id}, borrower package from LoanMatcha</p><h2 id="pkgTitle" style="font-size:1.4rem">Loan account ${b.id}</h2><p class="meta" style="margin:4px 0 0">Borrower identity is held by LoanMatcha and not shared with lenders.</p><div style="margin-top:6px">${badge(b)}</div></div><button class="x" data-act="close" aria-label="Close">×</button></div>
+    <div class="panel"><h3>Loan</h3><dl class="terms"><dt>Amount</dt><dd>${fmtP(o.ticket)}</dd><dt>Term</dt><dd>${o.term} months at ${o.rate}% p.a.</dd><dt>Monthly payment</dt><dd>${fmtP(M)}</dd><dt>Total payable</dt><dd>${fmtP(M*o.term)}</dd></dl></div>
+    <div class="panel"><h3>Borrower profile</h3><p style="margin:0 0 12px;font-size:.95rem">${esc(profileText(b))}</p><dl class="terms"><dt>Profile</dt><dd>${b.type}</dd><dt>Industry</dt><dd>${esc(b.industry)}</dd><dt>${b.type==='Business owner'?'Years in business':'Years with employer'}</dt><dd>${b.tenure} year${b.tenure>1?'s':''}</dd><dt>Province</dt><dd>${esc(b.province)}</dd><dt>${b.type==='Business owner'?'Monthly cash flow':'Monthly income'}</dt><dd>${fmtP2(b.income)}</dd><dt>Payment to income</dt><dd>${pti.toFixed(0)}%</dd><dt>Loan purpose</dt><dd>${esc(b.purpose)}</dd></dl></div>
+    <div class="panel"><h3>Documents submitted</h3><ul class="checks">${b.docsIn.map(d=>`<li><span class="ok">✓</span>${esc(d)}</li>`).join('')}</ul></div>
+    <div class="panel"><h3>Interview result</h3><p style="margin:0;font-size:.95rem">${esc(b.interview)}</p><p class="meta" style="margin:8px 0 0">Interview by ${b.officer}, ${fmtD(b.matchedAt)}.</p></div>
+    <div class="panel"><h3>Fit with your allocation</h3><ul class="checks">${fit.map(([ok,t])=>`<li><span class="${ok?'ok':'no'}">${ok?'✓':'✕'}</span>${esc(t)}</li>`).join('')}</ul></div>
+    <div class="panel"><h3>LoanMatcha checks</h3><ul class="checks"><li><span class="ok">✓</span>Government ID verified</li><li><span class="ok">✓</span>Selfie matches ID</li><li><span class="ok">✓</span>${b.type==='Business owner'?'Cash flow confirmed from bank statements':'Income confirmed from payslip and bank statement'}</li><li><span class="ok">✓</span>${b.type==='Business owner'?'Business registration and permit verified':'Employment confirmed with employer'}</li><li><span class="ok">✓</span>Fraud screening: no matches</li></ul>
+      ${b.flags.map(f=>`<div class="note">${esc(f)}</div>`).join('')}
+      <p class="meta" style="margin:12px 0 0">Qualified by ${b.officer}, LoanMatcha credit officer, on ${fmtD(b.matchedAt)}.</p></div>
+    ${extra}
+    ${act?`<div class="actions">${act}</div>`:''}
+  </div>`;
+  s.hidden=false;document.body.style.overflow='hidden';s.querySelector('.x').focus();
+}
+function closePkg(){const s=document.getElementById('sheet');s.hidden=true;s.innerHTML='';document.body.style.overflow=''}
+
+/* ---------- actions ---------- */
+let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act,id=el.dataset.id;
+  if(a==='open'){openPkg(id);return}
+  if(a==='close'){closePkg();return}
+  if(a==='filter'){ui.filter=el.dataset.f;render();return}
+  const b=state.borrowers.find(x=>x.id===id);
+  if(a==='approve'){b.status='approved';closePkg();toast(b.id+' approved. Release funds when ready.');render()}
+  if(a==='decline'){b.status='declined';b.declineReason=document.getElementById('reason').value;closePkg();toast(b.id+' declined. LoanMatcha has been notified.');render()}
+  if(a==='release'){b.status='released';b.releasedAt=new Date();b.dpd=0;closePkg();toast(fmtP(byOrder(b.orderId).ticket)+' released to '+b.id+'.');render()}
+  if(a==='releaseAll'){const o=byOrder(id);const l=state.borrowers.filter(x=>x.orderId===id&&x.status==='approved');l.forEach(x=>{x.status='released';x.releasedAt=new Date();x.dpd=0});toast(fmtP(l.length*o.ticket)+' released to '+l.length+' borrowers.');render()}
+  if(a==='approveClean'){const l=state.borrowers.filter(x=>x.status==='pending'&&!x.flags.length);l.forEach(x=>x.status='approved');toast(l.length+' borrowers approved. Release funds from each fund allocation.');render()}
+  if(a==='batch'){const o=byOrder(id),s=stats(o),n=Math.min(10,o.count-s.matched);for(let i=0;i<n;i++){const nb=makeBorrower(o,'pending');nb.matchedAt=new Date();state.borrowers.push(nb)}ui.filter='pending';toast('LoanMatcha matched '+n+' new borrowers to '+o.id+'.');render()}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('sheet').hidden)closePkg()});
+document.addEventListener('input',e=>{if(e.target.closest('#newOrder'))updateCalc()});
+document.addEventListener('submit',e=>{
+  if(e.target.id!=='newOrder')return;e.preventDefault();const f=e.target;
+  const ind=[...f.querySelectorAll('[name=ind]:checked')].map(x=>x.value),loc=[...f.querySelectorAll('[name=loc]:checked')].map(x=>x.value),docs=[...f.querySelectorAll('[name=doc]:checked')].map(x=>x.value);
+  const cap=+f.capital.value,n=+f.count.value,score=+f.score.value,rate=+f.rate.value;const errs=[];
+  if(!f.title.value.trim())errs.push('Give the allocation a name.');
+  if(!(cap>=10000))errs.push('Capital must be at least ₱10,000.');
+  if(!(n>=1)||cap/n<1000)errs.push('Each borrower should get at least ₱1,000. Lower the number of borrowers or raise the capital.');
+  if(!ind.length)errs.push('Choose at least one industry.');
+  if(!loc.length)errs.push('Choose at least one location.');
+  if(!(score>=300&&score<=850))errs.push('Minimum credit score must be between 300 and 850.');
+  if(!(rate>0&&rate<=60))errs.push('Interest rate must be between 0 and 60% per year.');
+  if(errs.length){document.getElementById('formErr').innerHTML=errs.join('<br>');return}
+  const id='FA-2026-0'+(20+state.orders.length);
+  state.orders.push({id,title:f.title.value.trim(),capital:cap,count:Math.round(n),ticket:Math.round(cap/n),industries:ind,locations:loc,minScore:score,timeline:+f.timeline.value,rate,term:+f.term.value,docs,postedAt:new Date()});
+  ui.filter='pending';toast('Fund allocation created. LoanMatcha has started matching borrowers.');location.hash='order/'+id;
+});
+
+/* ---------- router ---------- */
+function render(){
+  const h=location.hash.slice(1)||'orders',[v,arg]=h.split('/');const app=document.getElementById('app');
+  app.innerHTML=v==='order'?vOrder(arg):v==='review'?vReview():v==='portfolio'?vPortfolio():v==='new'?vNew():vOrders();
+  if(v==='new')updateCalc();
+  const nav=v==='order'||v==='new'?'orders':v;
+  document.querySelectorAll('[data-nav]').forEach(a=>{if(a.dataset.nav===nav)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+  const p=state.borrowers.filter(b=>b.status==='pending').length,c=document.getElementById('navcount');c.textContent=p;c.hidden=!p;
+}
+let lastView='';
+window.addEventListener('hashchange',()=>{const v=(location.hash.slice(1)||'orders').split('/')[0];if(v!==lastView)ui.filter='pending';lastView=v;closePkg();render();window.scrollTo(0,0)});
+render();
+</script>
+</body>
+</html>
