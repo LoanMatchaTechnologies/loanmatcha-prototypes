@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LoanMatcha Partners Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: brand header + tabs; queue list → full-page lender file with a 5-step KYL stepper on the left and the active step on the right */
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --soft:#F6F7F3; --ink:#1E2A22; --muted:#6A7469; --line:#E8E8E3;
+  --matcha:#3A533E; --forest:#2C4231; --sage:#7DA287; --matcha-soft:#E2EDE4; --slate:#4B5D97;
+  --coral:#D2603F; --coral-soft:#FBE7E0; --red:#A93A2A; --red-soft:#F6DEDA;
+  --sans:Figtree,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; --mono:'Courier Prime','Courier New',ui-monospace,monospace;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2.5px solid var(--matcha);outline-offset:2px;border-radius:6px}
+h1,h2,h3{margin:0;line-height:1.2;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:clamp(1.55rem,3.6vw,2rem);font-weight:800}
+h2{font-size:1.2rem;font-weight:700}
+h3{font-size:.98rem;font-weight:700}
+p{margin:0}
+.wrap{max-width:1160px;margin:0 auto;padding-inline:20px}
+.muted{color:var(--muted)} .small{font-size:.86rem}
+.mono{font-family:var(--mono);font-weight:700}
+.lab{font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;padding-bottom:6px}
+.brand{display:flex;align-items:center;text-decoration:none;color:inherit}
+.wm{font-weight:500;font-size:1.45rem;letter-spacing:-.01em}
+.wl{color:var(--slate)} .wmm{color:var(--sage)}
+.prod{font-weight:700;font-size:1.02rem;color:var(--forest);padding-left:12px;margin-left:12px;border-left:1.5px solid var(--line);line-height:1.6}
+.me{display:flex;align-items:center;gap:10px;font-weight:600;font-size:.92rem}
+.me i{width:34px;height:34px;border-radius:50%;background:var(--matcha-soft);color:var(--forest);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:.8rem}
+.me small{display:block;font-weight:500;color:var(--muted);font-size:.78rem}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs a{padding:10px 12px 11px;text-decoration:none;font-weight:600;color:var(--muted);border-bottom:2.5px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.tabs a[aria-current="page"]{color:var(--ink);border-color:var(--matcha)}
+.count{background:var(--coral);color:#fff;border-radius:99px;font-size:.72rem;padding:1px 7px;font-weight:700;font-family:var(--mono)}
+.proto{font-size:.82rem;color:var(--muted);padding-top:12px}
+.proto b{color:var(--ink)}
+main{padding-top:20px;padding-bottom:64px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.sub{color:var(--muted);margin-top:6px;max-width:64ch}
+.back{display:inline-block;margin-bottom:10px;text-decoration:none;color:var(--matcha);font-weight:600;font-size:.92rem}
+
+/* blocks */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.rowx{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.between{justify-content:space-between}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:22px}
+.kpi{padding:14px 16px;box-shadow:1px 0 0 var(--line),0 1px 0 var(--line);display:flex;flex-direction:column;gap:2px}
+.kpi span{font-size:.84rem;color:var(--muted)}
+.kpi b{font-family:var(--mono);font-size:1.5rem}
+.ticks{display:flex;gap:3px;margin-top:6px}
+.ticks i{flex:1;height:14px;border-radius:2px;background:var(--line)}
+.ticks i.on{background:var(--matcha)}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* stage strip */
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:18px}
+.strip button{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:44px}
+.strip button[aria-pressed="true"]{border-color:var(--matcha);box-shadow:inset 0 0 0 1px var(--matcha)}
+.strip b{font-family:var(--mono);font-size:1.3rem}
+.strip span{font-size:.82rem;color:var(--muted)}
+@media (max-width:760px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* list */
+.rows{border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 120px 130px 200px;gap:20px;align-items:center;padding:13px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;width:100%;text-decoration:none;color:inherit}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--soft)}
+.row b{display:block}
+.r-num{text-align:right;font-family:var(--mono);font-weight:700}
+.r-num small{display:block;font-family:var(--sans);font-weight:500;color:var(--muted);font-size:.74rem}
+.row>:nth-child(2){justify-self:start}
+.row>:nth-child(4){justify-self:end}
+.rows-head{display:grid;grid-template-columns:minmax(0,1fr) 120px 130px 200px;gap:20px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--soft)}
+.rows-head span:nth-child(3),.rows-head span:nth-child(4){text-align:right}
+@media (max-width:640px){.row{grid-template-columns:minmax(0,1fr) auto}.hide-s{display:none}.rows-head{display:none}}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+
+/* badges */
+.badge{font-family:var(--mono);font-size:.76rem;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;display:inline-block}
+.b-ok{background:var(--matcha-soft);color:var(--matcha)}
+.b-wait{background:var(--soft);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.b-warn{background:var(--coral-soft);color:var(--coral)}
+.b-bad{background:var(--red-soft);color:var(--red)}
+.b-dark{background:var(--matcha);color:#fff}
+
+/* file layout */
+.file{display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.file{grid-template-columns:minmax(0,1fr)}}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;position:sticky;top:120px}
+@media (max-width:860px){.steps{position:static;flex-direction:row;overflow-x:auto}}
+.steps button{width:100%;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:center;text-align:left;background:transparent;border:1px solid transparent;border-radius:12px;padding:10px;cursor:pointer;min-height:44px}
+@media (max-width:860px){.steps button{min-width:170px}}
+.steps button[aria-current="step"]{background:var(--soft);border-color:var(--line)}
+.steps .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:.82rem;border:1.5px solid var(--line);color:var(--muted)}
+.steps .done .n{background:var(--matcha);border-color:var(--matcha);color:#fff}
+.steps .cur .n{border-color:var(--matcha);color:var(--matcha)}
+.steps b{display:block;font-size:.92rem}
+.steps small{color:var(--muted);font-size:.78rem}
+.steps button:disabled{opacity:.5;cursor:not-allowed}
+
+.items{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item small{display:block;color:var(--muted);font-size:.8rem}
+@media (max-width:560px){.item{grid-template-columns:minmax(0,1fr) auto}.item .act{grid-column:1/-1}}
+dl.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 18px;margin:0;font-size:.93rem}
+dl.kv dt{color:var(--muted)} dl.kv dd{margin:0;text-align:right;font-weight:600}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:640px){.two{grid-template-columns:minmax(0,1fr)}}
+.note{background:var(--soft);border-radius:12px;padding:11px 14px;font-size:.9rem}
+.note.warn{background:var(--coral-soft)}
+.note.bad{background:var(--red-soft)}
+.note.ok{background:var(--matcha-soft)}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:640px){.opts{grid-template-columns:minmax(0,1fr)}}
+.opt{border:1.5px solid var(--line);border-radius:12px;padding:12px;text-align:left;background:var(--surface);cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.opt[aria-pressed="true"]{border-color:var(--matcha);background:var(--matcha-soft)}
+.opt b{font-size:.95rem}
+.opt span{font-size:.8rem;color:var(--muted)}
+textarea{width:100%;min-height:80px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;resize:vertical}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:.93rem}
+.check input{margin-top:4px;accent-color:var(--matcha);width:16px;height:16px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line);background:var(--surface);padding:9px 15px;border-radius:10px;font-weight:700;cursor:pointer;min-height:42px;text-decoration:none;color:inherit}
+.btn.primary{background:var(--matcha);border-color:var(--matcha);color:#fff}
+.btn.danger{color:var(--red);border-color:#E6C3BD}
+.btn.sm{min-height:34px;padding:5px 11px;font-size:.84rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.log{display:flex;flex-direction:column;gap:9px;font-size:.88rem}
+.log div{display:grid;grid-template-columns:128px minmax(0,1fr);gap:10px}
+@media (max-width:480px){.log div{grid-template-columns:minmax(0,1fr);gap:0}}
+.log span:first-child{font-family:var(--mono);color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-weight:600;font-size:.92rem;opacity:0;pointer-events:none;transition:.2s;z-index:60;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#queue"><span class="wm"><span class="wl">loan</span> <span class="wmm">matcha</span></span><span class="prod">Partners Admin</span></a>
+    <div class="me"><i aria-hidden="true">AB</i><span>Abby<small>Account Manager</small></span></div>
+  </div>
+  <nav class="wrap tabs" aria-label="Main">
+    <a href="#queue" data-nav="queue">KYL queue <span class="count" id="qcount"></span></a>
+    <a href="#partners" data-nav="partners">Active partners</a>
+    <a href="#audit" data-nav="audit">Audit trail</a>
+  </nav>
+</header>
+<p class="wrap proto"><b>Prototype.</b> Sample lenders. Screening results, documents and transfers are simulated.</p>
+<main id="app" class="wrap"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+const fmtP=n=>'₱'+Math.round(n).toLocaleString('en-PH');
+const fmtM=n=>n>=1e6?'₱'+(Math.round(n/1e5)/10).toLocaleString('en-PH')+'M':fmtP(n);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const now=()=>{const d=new Date();return 'Oct 11, '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
+
+const STEPS=['Know your lender','Know your capital','AML screening','Risk decision','Agreement and access'];
+const STEP_OUT=['Identity verified','Source declared, account identified','Cleared or flagged','Risk class and decision','Activated'];
+const DOCS={
+  Individual:['Government-issued ID','Full name and date of birth','Address and nationality','Occupation or business','TIN','Contact information'],
+  Institution:['SEC/DTI registration documents','Latest GIS or equivalent','Registered business address','Authorized representative','Beneficial owners and controllers','Board or secretary’s resolution'],
+  Bank:['BSP certificate of authority','SEC registration and articles','Latest GIS','Board resolution approving loan channeling','Authorized signatories','Beneficial owners and controllers','AML/CTF compliance program (MTPP)']
+};
+const ROLE={Individual:'Growth Partner',Institution:'Growth Partner',Bank:'Loan Channeling Partner'};
+const SOURCES=['Business income','Employment or professional income','Savings','Sale of property or assets','Inheritance','Corporate funds','Bank funds (loan channeling)'];
+const AML=[['watch','Identity and watchlist screening','Sanctions, watchlists'],['pep','PEP screening','Politically exposed persons and close associates'],['adverse','Adverse media','Negative news, investigations, litigation'],['owners','Beneficial owner screening','Owners and controllers behind institutions'],['juris','High-risk jurisdictions and patterns','Unusual sources or locations']];
+
+function L(o){ // build a lender with defaults
+  const docs={};DOCS[o.type].forEach(d=>docs[d]='Verified');
+  return Object.assign({docs,cap:{sources:[],certified:true,bank:'',acctName:'',acctNo:'',acctVerified:true,amount:o.commit},
+    aml:{run:true,res:{watch:'Clear',pep:'Clear',adverse:'Clear',owners:'Clear',juris:'Clear'}},
+    dec:{level:'Low',interview:false,compliance:false,edd:false,committee:false,decided:'approved',note:''},
+    agr:{sent:true,signed:true,account:true,received:true,verified:true,ref:''},log:[]},o);
+}
+const S={lenders:[
+  L({id:'LN-201',name:'ABC Bank',type:'Bank',commit:25e6,step:6,since:'Aug 20',
+     cap:{sources:['Bank funds (loan channeling)'],certified:true,bank:'ABC Bank (own account)',acctName:'ABC Bank',acctNo:'•••• 0192',acctVerified:true,amount:25e6},
+     agr:{sent:true,signed:true,account:true,received:true,verified:true,ref:'ABC-TRF-0820'}}),
+  L({id:'LN-214',name:'Dela Paz Holdings Inc.',type:'Institution',commit:3e6,step:5,since:'Sep 28',
+     cap:{sources:['Corporate funds'],certified:true,bank:'BPI',acctName:'Dela Paz Holdings Inc.',acctNo:'•••• 7741',acctVerified:true,amount:3e6},
+     agr:{sent:true,signed:true,account:true,received:false,verified:false,ref:''}}),
+  L({id:'LN-211',name:'K. Tan',type:'Individual',commit:2e6,step:4,since:'Sep 30',
+     cap:{sources:['Savings'],certified:true,bank:'Metrobank',acctName:'Kenneth Tan',acctNo:'•••• 3310',acctVerified:true,amount:2e6},
+     aml:{run:true,res:{watch:'Clear',pep:'Match',adverse:'Hit',owners:'Clear',juris:'Clear'}},
+     dec:{level:'High',interview:true,compliance:false,edd:false,committee:false,decided:'',note:'PEP match: close associate of a local official. Two news items on a land dispute. Savings declared for ₱2M; bank statements cover ₱600K.'}}),
+  L({id:'LN-223',name:'Rural Bank of San Rafael',type:'Bank',commit:15e6,step:3,since:'Oct 6',
+     cap:{sources:['Bank funds (loan channeling)'],certified:true,bank:'Rural Bank of San Rafael (own account)',acctName:'Rural Bank of San Rafael',acctNo:'•••• 5528',acctVerified:true,amount:15e6},
+     aml:{run:false,res:{}}}),
+  L({id:'LN-208',name:'Northbay Credit Cooperative',type:'Institution',commit:5e6,step:1,since:'Oct 2',
+     cap:{sources:['Corporate funds'],certified:false,bank:'Landbank',acctName:'Northbay Credit Coop',acctNo:'•••• 2204',acctVerified:false,amount:5e6},
+     aml:{run:false,res:{}}}),
+  L({id:'LN-226',name:'Lim Family Office',type:'Individual',commit:8e6,step:2,since:'Oct 9',
+     cap:{sources:['Business income','Sale of property or assets'],certified:true,bank:'BDO',acctName:'Lim Family Office',acctNo:'•••• 4821',acctVerified:false,amount:8e6},
+     aml:{run:false,res:{}}})
+],active:8,audit:[],sel:{},filter:0};
+// set doc states for in-progress files
+(function(){
+  const nb=S.lenders.find(l=>l.id==='LN-208');nb.docs['Latest GIS or equivalent']='Missing';nb.docs['Board or secretary’s resolution']='Missing';nb.docs['Beneficial owners and controllers']='Pending';
+  S.lenders.forEach(l=>{if(l.step<=3&&l.step>0){l.dec={level:'',interview:false,compliance:false,edd:false,committee:false,decided:'',note:''}}
+    if(l.step<=4){l.agr={sent:false,signed:false,account:false,received:false,verified:false,ref:''}}
+    l.log.push({t:l.since,m:'Application received. '+ROLE[l.type]+', '+fmtM(l.commit)+' commitment.'})});
+  S.audit.push({t:'Oct 11, 09:05',m:'LN-211 K. Tan referred to risk committee.'},{t:'Oct 10, 16:40',m:'LN-214 Dela Paz Holdings signed the partner agreement.'},{t:'Oct 10, 11:12',m:'LN-208 Northbay: GIS and board resolution requested.'});
+})();
+function log(l,m){const e={t:now(),m:l.id+' '+l.name+': '+m};l.log.unshift({t:e.t,m});S.audit.unshift(e)}
+
+// ----- step completeness -----
+function riskSuggest(l){const r=l.aml.res;if(!l.aml.run)return'';if(r.pep==='Match'||r.watch==='Hit'||r.juris==='Hit')return'High';if(r.adverse==='Hit'||r.owners==='Hit'||!l.cap.certified)return'Medium';
+  const missing=Object.values(l.docs).some(v=>v!=='Verified');return missing?'Medium':'Low'}
+function stepDone(l,i){
+  if(i===1)return Object.values(l.docs).every(v=>v==='Verified');
+  if(i===2)return l.cap.certified&&l.cap.acctVerified&&l.cap.acctName&&l.cap.sources.length>0;
+  if(i===3)return l.aml.run;
+  if(i===4)return l.dec.decided==='approved';
+  if(i===5)return l.step===6;
+}
+function gates(l){const d=l.dec;if(d.level==='Medium')return[['interview','Lender interview on source and intent'],['compliance','Manual compliance review']];if(d.level==='High')return[['edd','Enhanced due diligence on source and profile'],['committee','Risk committee approval']];return[]}
+function statusBadge(l){if(l.step===6)return'<span class="badge b-dark">Active</span>';if(l.step===0)return'<span class="badge b-bad">Do not proceed</span>';
+  if(l.step===4&&l.dec.level==='High')return'<span class="badge b-bad">Risk committee</span>';
+  const w=l.step===1&&Object.values(l.docs).includes('Missing');return`<span class="badge ${w?'b-warn':'b-wait'}">${w?'Documents missing':STEPS[l.step-1]}</span>`}
+function riskBadge(lv){return lv?`<span class="badge ${lv==='Low'?'b-ok':lv==='Medium'?'b-warn':'b-bad'}">${lv} risk</span>`:'<span class="badge b-wait">Not rated</span>'}
+
+// ----- views -----
+function vQueue(){
+  const inq=S.lenders.filter(l=>l.step>=1&&l.step<=5);
+  const per=[1,2,3,4,5].map(i=>inq.filter(l=>l.step===i).length);
+  const list=S.filter?inq.filter(l=>l.step===S.filter):inq;
+  const committed=inq.reduce((s,l)=>s+l.commit,0);
+  return`<div class="head"><div><span class="lab">Behind the scenes · how we onboard lenders</span><h1>Know Your Lender queue</h1><p class="sub">Every lender passes five checks before their capital is accepted. Only clean, legitimate capital enters the platform.</p></div></div>
+  <div class="kpis"><div class="kpi"><span>In onboarding</span><b>${inq.length}</b></div><div class="kpi"><span>Capital in onboarding</span><b>${fmtM(committed)}</b></div>
+  <div class="kpi"><span>Needs attention</span><b>${inq.filter(l=>Object.values(l.docs).includes('Missing')||(l.step===4&&l.dec.level==='High')).length}</b></div>
+  <div class="kpi"><span>19-lender limit</span><b>${S.active} / 19</b><div class="ticks" aria-label="${S.active} of 19 slots used">${Array.from({length:19},(_,i)=>`<i class="${i<S.active?'on':''}"></i>`).join('')}</div></div></div>
+  <div class="strip" role="group" aria-label="Filter by step">${STEPS.map((s,i)=>`<button data-act="filter" data-v="${i+1}" aria-pressed="${S.filter===i+1}"><span>0${i+1}</span><b>${per[i]}</b><span>${s}</span></button>`).join('')}</div>
+  <div class="rowx between" style="margin-bottom:10px"><h2>${S.filter?STEPS[S.filter-1]:'All lenders in onboarding'}</h2>${S.filter?'<button class="btn sm" data-act="filter" data-v="0">Show all</button>':''}</div>
+  ${list.length?`<div class="rows"><div class="rows-head"><span class="lab">Lender</span><span class="lab">Risk</span><span class="lab">Commitment</span><span class="lab">Status</span></div>${list.map(l=>`<a class="row" href="#lender/${l.id}"><span><b>${esc(l.name)}</b><span class="small muted">${l.id} · ${ROLE[l.type]} · ${l.type==='Individual'?'Individual / HNWI':l.type}</span></span><span class="hide-s">${riskBadge(l.dec.level||'')}</span><span class="r-num hide-s">${fmtM(l.commit)}</span>${statusBadge(l)}</a>`).join('')}</div>`:'<div class="rows"><div class="empty">No lenders at this step.</div></div>'}`;
+}
+function vPartners(){
+  const act=S.lenders.filter(l=>l.step===6);
+  return`<div class="head"><div><h1>Active partners</h1><p class="sub">${S.active} of 19 lender slots in use. Sample shows partners onboarded in this prototype; the rest are on file.</p></div></div>
+  <div class="rows"><div class="rows-head"><span class="lab">Lender</span><span class="lab">Risk</span><span class="lab">Commitment</span><span class="lab">Status</span></div>${act.map(l=>`<a class="row" href="#lender/${l.id}"><span><b>${esc(l.name)}</b><span class="small muted">${l.id} · ${ROLE[l.type]}</span></span><span class="hide-s">${riskBadge(l.dec.level)}</span><span class="r-num hide-s">${fmtM(l.commit)}</span><span class="badge b-dark">Active</span></a>`).join('')}</div>`;
+}
+function vAudit(){return`<div class="head"><div><h1>Audit trail</h1><p class="sub">Every KYL action, who took it and when. Kept for AMLC and SEC review.</p></div></div><div class="panel"><div class="log">${S.audit.map(e=>`<div><span>${esc(e.t)}</span><span>${esc(e.m)} <span class="muted">· Abby</span></span></div>`).join('')}</div></div>`}
+
+function vLender(id){
+  const l=S.lenders.find(x=>x.id===id);if(!l)return'<a class="back" href="#queue">Back to queue</a><div class="empty">Lender not found.</div>';
+  const cur=l.step>=1&&l.step<=5?l.step:5;
+  const view=S.sel[id]||cur;
+  const nav=STEPS.map((s,i)=>{const n=i+1,done=stepDone(l,n)||l.step>n,isCur=n===l.step;const locked=n>Math.max(l.step,1)&&l.step!==6&&l.step!==0;
+    return`<li><button data-act="step" data-id="${l.id}" data-v="${n}" class="${done?'done':isCur?'cur':''}" ${view===n?'aria-current="step"':''} ${locked?'disabled':''}><span class="n">${done?'✓':n}</span><span><b>${s}</b><small>${done?STEP_OUT[i]:isCur?'In progress':'Locked until earlier steps pass'}</small></span></button></li>`}).join('');
+  return`<a class="back" href="#queue">Back to KYL queue</a>
+  <div class="head"><div><span class="lab">${l.id} · ${ROLE[l.type]} · ${l.type==='Individual'?'Individual / HNWI':l.type}</span><h1>${esc(l.name)}</h1><p class="sub">${fmtP(l.commit)} capital commitment. Applied ${l.since}.</p></div><div class="rowx">${riskBadge(l.dec.level)}${statusBadge(l)}</div></div>
+  <div class="file"><ol class="steps" aria-label="KYL steps">${nav}</ol>
+  <div class="stack" style="gap:16px">${[s1,s2,s3,s4,s5][view-1](l)}
+  <div class="panel"><h3 style="margin-bottom:10px">Activity on this file</h3><div class="log">${l.log.map(e=>`<div><span>${esc(e.t)}</span><span>${esc(e.m)}</span></div>`).join('')}</div></div></div></div>`;
+}
+function stepHead(n,desc){return`<div><span class="lab">Step 0${n}</span><h2>${STEPS[n-1]}</h2><p class="muted small" style="margin-top:4px">${desc}</p></div>`}
+function nextBtn(l,n){if(l.step!==n)return'';const ok=stepDone(l,n);return`<div class="btns"><button class="btn primary" data-act="advance" data-id="${l.id}" ${ok?'':'disabled'}>Mark step complete</button>${ok?'':'<span class="small muted" style="align-self:center">Finish the items above first.</span>'}</div>`}
+function s1(l){
+  const ro=l.step!==1;
+  return`<div class="panel stack">${stepHead(1,'We verify who the lender is. Required documents depend on the lender type.')}
+  <div class="items">${Object.entries(l.docs).map(([d,st])=>`<div class="item"><span>${esc(d)}<small>${st==='Verified'?'Checked against original':st==='Pending'?'Uploaded, not yet checked':'Not submitted'}</small></span><span class="badge ${st==='Verified'?'b-ok':st==='Pending'?'b-wait':'b-warn'}">${st}</span><span class="act btns">${ro||st==='Verified'?'':st==='Pending'?`<button class="btn sm primary" data-act="doc" data-id="${l.id}" data-v="${esc(d)}" data-s="Verified">Verify</button>`:`<button class="btn sm" data-act="doc" data-id="${l.id}" data-v="${esc(d)}" data-s="Pending">Mark received</button>`}</span></div>`).join('')}</div>
+  ${!ro&&Object.values(l.docs).includes('Missing')?`<div class="btns"><button class="btn" data-act="request" data-id="${l.id}">Request missing documents</button></div>`:''}
+  ${nextBtn(l,1)}</div>`;
+}
+function s2(l){
+  const c=l.cap,ro=l.step!==2,match=c.acctName&&(c.acctName.toLowerCase().replace(/[^a-z]/g,'').slice(0,8)===l.name.toLowerCase().replace(/[^a-z]/g,'').slice(0,8));
+  return`<div class="panel stack">${stepHead(2,'We understand where the capital comes from and which account it will come from.')}
+  <div class="two"><div class="stack"><h3>Source of capital declared</h3><div class="stack" style="gap:6px">${SOURCES.map(s=>`<label class="check"><input type="checkbox" disabled ${c.sources.includes(s)?'checked':''}> ${s}</label>`).join('')}</div></div>
+  <div class="stack"><h3>Funding account</h3><dl class="kv"><dt>Bank</dt><dd>${esc(c.bank)}</dd><dt>Account name</dt><dd>${esc(c.acctName)}</dd><dt>Account number</dt><dd class="mono">${esc(c.acctNo)}</dd><dt>Expected commitment</dt><dd class="mono">${fmtP(c.amount)}</dd></dl>
+  <div class="note ${match?'ok':'warn'}">${match?'Account name matches the lender.':'Account name does not exactly match the lender name. Confirm the account belongs to the lender before verifying.'}</div></div></div>
+  <div class="items"><div class="item"><span>Source-of-capital certification signed<small>“The capital committed comes from legitimate sources and is not the proceeds of any unlawful activity.”</small></span><span class="badge ${c.certified?'b-ok':'b-warn'}">${c.certified?'Signed':'Not signed'}</span><span class="act">${ro||c.certified?'':`<button class="btn sm" data-act="cert" data-id="${l.id}">Mark signed</button>`}</span></div>
+  <div class="item"><span>Funding account verified<small>Bank certificate or statement in the lender’s name</small></span><span class="badge ${c.acctVerified?'b-ok':'b-wait'}">${c.acctVerified?'Verified':'Pending'}</span><span class="act">${ro||c.acctVerified?'':`<button class="btn sm primary" data-act="acct" data-id="${l.id}">Verify account</button>`}</span></div></div>
+  ${nextBtn(l,2)}</div>`;
+}
+function s3(l){
+  const a=l.aml,ro=l.step!==3;
+  return`<div class="panel stack">${stepHead(3,'We screen the lender, and the owners behind it, against global risk lists.')}
+  <div class="items">${AML.map(([k,t,d])=>{const r=a.res[k];return`<div class="item"><span>${t}<small>${d}</small></span><span class="badge ${!a.run?'b-wait':r==='Clear'?'b-ok':'b-bad'}">${a.run?r:'Not run'}</span><span></span></div>`}).join('')}</div>
+  ${!a.run&&!ro?`<div class="btns"><button class="btn primary" data-act="screen" data-id="${l.id}">Run AML screening</button></div>`:''}
+  ${a.run?`<div class="note ${riskSuggest(l)==='Low'?'ok':riskSuggest(l)==='Medium'?'warn':'bad'}">Suggested risk level from screening: <b>${riskSuggest(l)}</b>. Final call is made in the next step.</div>`:''}
+  ${nextBtn(l,3)}</div>`;
+}
+function s4(l){
+  const d=l.dec,ro=l.step!==4,g=gates(l),sug=riskSuggest(l);
+  const can=d.level&&g.every(([k])=>d[k]);
+  return`<div class="panel stack">${stepHead(4,'We classify the lender and decide on onboarding, following a risk-based approach.')}
+  <div class="opts">${[['Low','Standard onboarding','Profile and capital consistent and verifiable'],['Medium','Proceed after review','Interview and compliance review required'],['High','Enhanced due diligence','Risk committee decides']].map(([lv,t,s])=>`<button class="opt" data-act="level" data-id="${l.id}" data-v="${lv}" aria-pressed="${d.level===lv}" ${ro?'disabled':''}><b>${lv} risk${lv===sug?' · suggested':''}</b><span>${t}. ${s}.</span></button>`).join('')}</div>
+  ${g.length?`<div class="items">${g.map(([k,t])=>`<div class="item"><span>${t}</span><span class="badge ${d[k]?'b-ok':'b-wait'}">${d[k]?'Done':'To do'}</span><span class="act">${ro||d[k]?'':`<button class="btn sm" data-act="gate" data-id="${l.id}" data-v="${k}">Mark done</button>`}</span></div>`).join('')}</div>`:''}
+  <div class="stack" style="gap:6px"><label for="note-${l.id}"><b>Decision notes</b></label><textarea id="note-${l.id}" ${ro?'readonly':''} placeholder="What you checked and why you decided">${esc(d.note)}</textarea></div>
+  ${ro?`<div class="note ${d.decided==='approved'?'ok':'bad'}">${d.decided==='approved'?'Approved for onboarding as '+d.level+' risk.':'Decision pending.'}</div>`:`<div class="btns"><button class="btn primary" data-act="decide" data-id="${l.id}" data-v="approved" ${can?'':'disabled'}>Approve onboarding</button><button class="btn" data-act="decide" data-id="${l.id}" data-v="info">Request more information</button><button class="btn danger" data-act="decide" data-id="${l.id}" data-v="reject">Do not proceed</button></div>${can?'':`<p class="small muted">${d.level?'Complete the required reviews first.':'Choose a risk level first.'}</p>`}`}
+  </div>`;
+}
+function s5(l){
+  const a=l.agr,ro=l.step!==5;
+  const items=[['sent','Partner agreement sent','Terms and conditions for '+ROLE[l.type].toLowerCase()+'s'],['signed','Agreement signed digitally','By the authorized signatory'],['account','Funding account registered','Only this account can send capital'],['received','Bank-to-bank transfer received','To the designated LoanMatcha partner account'],['verified','Transfer verified','Sender, amount and reference checked']];
+  const all=items.every(([k])=>a[k]);
+  return`<div class="panel stack">${stepHead(5,'Once approved, we formalize the partnership and accept the capital. No wallet, no custody, bank-to-bank only.')}
+  <div class="items">${items.map(([k,t,s],i)=>{const prev=i===0||a[items[i-1][0]];return`<div class="item"><span>${t}<small>${s}</small></span><span class="badge ${a[k]?'b-ok':'b-wait'}">${a[k]?'Done':'Pending'}</span><span class="act">${ro||a[k]?'':`<button class="btn sm ${prev?'primary':''}" data-act="agr" data-id="${l.id}" data-v="${k}" ${prev?'':'disabled'}>Mark done</button>`}</span></div>`}).join('')}</div>
+  ${l.step===6?'<div class="note ok">Partner active. They can now allocate funds in the Partners workspace.</div>':l.step===5?`<div class="btns"><button class="btn primary" data-act="activate" data-id="${l.id}" ${all&&S.active<19?'':'disabled'}>Activate partner</button></div><p class="small muted">${S.active>=19?'All 19 lender slots are in use.':S.active+' of 19 slots used. Activation takes one slot.'}</p>`:''}
+  </div>`;
+}
+
+// ----- actions -----
+function find(id){return S.lenders.find(l=>l.id===id)}
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const a=el.dataset.act,l=find(el.dataset.id),v=el.dataset.v;
+  if(a==='filter'){S.filter=+v;return render()}
+  if(a==='step'){S.sel[l.id]=+v;return render()}
+  if(a==='doc'){l.docs[v]=el.dataset.s;log(l,v+(el.dataset.s==='Verified'?' verified.':' received.'));toast(v+': '+el.dataset.s);return render()}
+  if(a==='request'){const m=Object.keys(l.docs).filter(k=>l.docs[k]==='Missing');log(l,'Requested '+m.join(', ')+'.');toast('Request sent to '+l.name);return render()}
+  if(a==='cert'){l.cap.certified=true;log(l,'Source-of-capital certification signed.');return render()}
+  if(a==='acct'){l.cap.acctVerified=true;log(l,'Funding account verified: '+l.cap.bank+' '+l.cap.acctNo+'.');toast('Funding account verified');return render()}
+  if(a==='screen'){l.aml.run=true;l.aml.res={watch:'Clear',pep:'Clear',adverse:'Clear',owners:'Clear',juris:'Clear'};log(l,'AML screening run: no matches.');toast('Screening complete: no matches');return render()}
+  if(a==='level'){l.dec.level=v;log(l,'Risk level set to '+v+'.');return render()}
+  if(a==='gate'){l.dec[v]=true;log(l,gates(l).find(g=>g[0]===v)[1]+' done.');return render()}
+  if(a==='decide'){const note=document.getElementById('note-'+l.id);l.dec.note=note?note.value:'';
+    if(v==='approved'){l.dec.decided='approved';l.step=5;S.sel[l.id]=5;log(l,'Approved for onboarding as '+l.dec.level+' risk.');toast(l.name+' approved. Send the partner agreement.')}
+    else if(v==='info'){log(l,'More information requested.');toast('Request sent to '+l.name)}
+    else{l.step=0;log(l,'Do not proceed. Capital not accepted.');toast(l.name+': do not proceed');location.hash='queue';return}
+    return render()}
+  if(a==='agr'){l.agr[v]=true;if(v==='verified'&&!l.agr.ref)l.agr.ref='TRF-'+Math.floor(1e5+Math.random()*9e5);log(l,{sent:'Partner agreement sent.',signed:'Agreement signed.',account:'Funding account registered.',received:'Transfer of '+fmtP(l.commit)+' received.',verified:'Transfer verified, ref '+l.agr.ref+'.'}[v]);return render()}
+  if(a==='activate'){l.step=6;S.active++;log(l,'Partner activated. '+S.active+' of 19 slots used.');toast(l.name+' is now an active partner');return render()}
+  if(a==='advance'){if(!stepDone(l,l.step))return;log(l,STEPS[l.step-1]+' complete.');l.step++;S.sel[l.id]=l.step;
+    if(l.step===4&&!l.dec.level){l.dec.level=riskSuggest(l)}toast(STEPS[l.step-2]+' complete');return render()}
+});
+document.addEventListener('input',e=>{const m=e.target.id&&e.target.id.match(/^note-(LN-\d+)$/);if(m)find(m[1]).dec.note=e.target.value});
+
+function render(){
+  const h=location.hash.slice(1)||'queue',[v,arg]=h.split('/');
+  document.getElementById('app').innerHTML=v==='lender'?vLender(arg):v==='partners'?vPartners():v==='audit'?vAudit():vQueue();
+  const nav=v==='lender'?'queue':v;document.querySelectorAll('[data-nav]').forEach(a=>a.dataset.nav===nav?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
+  const c=S.lenders.filter(l=>l.step>=1&&l.step<=5).length,q=document.getElementById('qcount');q.textContent=c;q.hidden=!c;
+}
+window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0)});
+render();
+})();
+</script>
+</body>
+</html>
